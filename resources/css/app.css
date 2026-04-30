@@ -1,0 +1,364 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Cairo', 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+html {
+    font-family: var(--font-sans);
+}
+
+body {
+    color: #0f172a;
+}
+
+@layer components {
+    .page-hero {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(238, 242, 255, 0.85));
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .page-eyebrow {
+        margin-bottom: 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #6366f1;
+    }
+
+    .page-title {
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #0f172a;
+    }
+
+    .page-subtitle {
+        margin-top: 0.5rem;
+        font-size: 0.95rem;
+        color: #64748b;
+    }
+
+    .stats-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .stat-label {
+        display: block;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .stat-value {
+        display: block;
+        margin-top: 0.35rem;
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 0.7rem;
+        padding: 0.65rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: 180ms ease;
+    }
+
+    .btn-primary {
+        background: #4f46e5;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(79, 70, 229, 0.18);
+    }
+
+    .btn-primary:hover {
+        background: #4338ca;
+    }
+
+    .btn-secondary {
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+    }
+
+    .btn-secondary:hover {
+        background: #f8fafc;
+    }
+}
+
+@layer base {
+    input[type='text'],
+    input[type='url'],
+    textarea,
+    select {
+        border-radius: 0.65rem;
+        border-color: #94a3b8;
+        background-color: #fff;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
+        border-color: #818cf8;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-hero {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.flashcard-face {
+    overflow: hidden;
+    word-break: break-word;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.flashcard-back-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50% 50%;
+    align-items: stretch;
+    gap: 0;
+}
+
+.flashcard-back-split > * {
+    min-width: 0;
+    min-height: 0;
+}
+
+.flashcard-back-media {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f8fafc, #eef2ff);
+    border-bottom: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.flashcard-back-media.is-empty {
+    background: #f8fafc;
+}
+
+.flashcard-back-image {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+.flashcard-back-emoji {
+    font-size: clamp(2rem, 6vw, 3.25rem);
+    line-height: 1;
+}
+
+.flashcard-back-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 0.35rem;
+    padding: 0.65rem 0.75rem;
+    text-align: center;
+}
+
+.flashcard-back-text > * {
+    width: 100%;
+    text-align: center;
+}
+
+.flashcard-back-ar {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4f46e5;
+    margin: 0;
+}
+
+.flashcard-back-en {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.flashcard-back-explanation {
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #64748b;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .flashcard-back-text {
+        padding: 0.4rem 0.5rem;
+    }
+
+    .flashcard-back-ar {
+        font-size: 0.85rem;
+    }
+
+    .flashcard-back-en {
+        font-size: 0.78rem;
+    }
+
+    .flashcard-back-explanation {
+        font-size: 0.68rem;
+    }
+}
+
+/* ===== Print layout =====
+ * Page and grid dimensions are driven by CSS variables that the print view
+ * sets per request (--print-page-width, --print-page-height, --print-cols,
+ * --print-rows, ...). The card width/height are intentionally fixed in mm
+ * so a larger paper size simply fits more cards rather than larger ones.
+ */
+.print-page {
+    width: var(--print-page-width);
+    height: var(--print-page-height);
+    min-width: var(--print-page-width);
+    min-height: var(--print-page-height);
+    max-width: none;
+    margin: 0 auto;
+    padding: var(--print-padding, 10mm);
+    box-sizing: border-box;
+    background: white;
+    direction: ltr;
+    flex-shrink: 0;
+}
+
+.print-grid {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    direction: ltr;
+    gap: var(--print-gap, 4mm);
+    width: 100%;
+    height: 100%;
+}
+
+.print-cell {
+    border-width: var(--print-border-width, 0.3mm);
+    border-style: var(--print-border-style, solid);
+    border-color: #64748b;
+    border-radius: 0;
+    width: var(--print-card-width, 60.6667mm);
+    height: var(--print-card-height, 89.6667mm);
+    aspect-ratio: auto;
+    box-shadow: none;
+}
+
+.print-cell--empty {
+    background: #ffffff;
+}
+
+@media screen {
+    body:has(.print-page) {
+        overflow-x: auto;
+    }
+
+    .print-page {
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+        margin: 16px auto;
+    }
+}
+
+@media print {
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: white !important;
+        direction: ltr;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-page {
+        width: var(--print-page-width);
+        height: var(--print-page-height);
+        min-width: var(--print-page-width);
+        min-height: var(--print-page-height);
+        max-width: none;
+        padding: var(--print-padding, 10mm);
+        box-sizing: border-box;
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+        break-after: page;
+    }
+
+    .print-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+
+    .print-cell {
+        width: var(--print-card-width, 60.6667mm);
+        height: var(--print-card-height, 89.6667mm);
+        border-width: var(--print-border-width, 0.3mm);
+        border-style: var(--print-border-style, solid);
+        border-color: #64748b;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .print-grid {
+        gap: var(--print-gap, 4mm);
+        width: 100%;
+        height: 100%;
+        justify-content: center;
+        align-content: center;
+        direction: ltr;
+    }
+}
