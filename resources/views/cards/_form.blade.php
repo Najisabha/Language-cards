@@ -24,11 +24,18 @@
             سيتم حفظ هذه البطاقة داخل المجموعة: <strong>{{ $deck->name }}</strong>
         </div>
 
-        <div>
+        <div data-ai-suggest-url="{{ route('cards.ai-suggest') }}">
             <label for="word" class="block text-sm font-medium mb-1">الكلمة (تظهر في الوجه الأمامي) <span class="text-red-500">*</span></label>
-            <input type="text" id="word" name="word" required maxlength="120" dir="ltr"
-                   value="{{ old('word', $card->word) }}"
-                   class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="flex flex-wrap gap-2 items-stretch">
+                <input type="text" id="word" name="word" required maxlength="120" dir="ltr"
+                       value="{{ old('word', $card->word) }}"
+                       class="flex-1 min-w-[12rem] rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="button" id="ai-suggest-btn"
+                        class="shrink-0 px-4 py-2 rounded-md border border-indigo-200 bg-indigo-50 text-indigo-800 text-sm font-semibold hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                    AI
+                </button>
+            </div>
+            <p id="ai-suggest-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
             @error('word') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -383,5 +390,82 @@
 
     syncBuilderVisibility();
     render();
+
+    const aiSuggestBtn = byId('ai-suggest-btn');
+    const aiSuggestError = byId('ai-suggest-error');
+    const aiSuggestUrl = qs('[data-ai-suggest-url]')?.getAttribute('data-ai-suggest-url');
+
+    const setAiError = (msg) => {
+        if (!aiSuggestError) return;
+        if (msg) {
+            aiSuggestError.textContent = msg;
+            aiSuggestError.classList.remove('hidden');
+        } else {
+            aiSuggestError.textContent = '';
+            aiSuggestError.classList.add('hidden');
+        }
+    };
+
+    word?.addEventListener('input', () => setAiError(''));
+
+    if (aiSuggestBtn && aiSuggestUrl) {
+        aiSuggestBtn.addEventListener('click', async () => {
+            setAiError('');
+            const w = (word?.value || '').trim();
+            if (!w) {
+                setAiError('أدخل كلمة في الوجه الأمامي أولًا.');
+                return;
+            }
+            const tokenInput = document.querySelector('input[name="_token"]');
+            const token = tokenInput?.value;
+            if (!token) {
+                setAiError('تعذر التحقق من الجلسة. حدّث الصفحة.');
+                return;
+            }
+            const prevText = aiSuggestBtn.textContent;
+            aiSuggestBtn.disabled = true;
+            aiSuggestBtn.textContent = '…';
+            try {
+                const res = await fetch(aiSuggestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ word: w }),
+                });
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    data = {};
+                }
+                if (!res.ok) {
+                    setAiError(data.message || 'حدث خطأ.');
+                    return;
+                }
+                if (enMeaning && data.en_meaning != null) enMeaning.value = data.en_meaning;
+                if (arMeaning && data.ar_meaning != null) arMeaning.value = data.ar_meaning;
+                if (explanation && data.explanation != null) explanation.value = data.explanation;
+                if (icon && data.icon != null) icon.value = data.icon;
+                const enTrim = String(data.en_meaning ?? '').trim();
+                const arTrim = String(data.ar_meaning ?? '').trim();
+                const expTrim = String(data.explanation ?? '').trim();
+                const iconTrim = String(data.icon ?? '').trim();
+                if (showEn && enTrim) showEn.checked = true;
+                if (showAr && arTrim) showAr.checked = true;
+                if (showExplanation && expTrim) showExplanation.checked = true;
+                if (showIcon && iconTrim) showIcon.checked = true;
+                render();
+            } catch {
+                setAiError('تعذر الاتصال بالخادم.');
+            } finally {
+                aiSuggestBtn.disabled = false;
+                aiSuggestBtn.textContent = prevText;
+            }
+        });
+    }
 })();
 </script>

@@ -2,7 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>طباعة - {{ $deck->name }}</title>
+    @php
+        $printScope = $printScope ?? 'deck';
+    @endphp
+    <title>
+        @if ($printScope === 'level')
+            طباعة - {{ $level->name }}
+        @else
+            طباعة - {{ $deck->name }}
+        @endif
+    </title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=cairo:400,500,600,700|inter:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css'])
@@ -16,6 +25,8 @@
             --print-card-height: {{ $printSettings['card_height_mm'] }}mm;
             --print-border-width: {{ $printSettings['border_width_mm'] ?? 0.3 }}mm;
             --print-border-style: {{ $printSettings['border_style'] ?? 'solid' }};
+            --print-front-font-size: {{ (int) ($printSettings['front_font_size_px'] ?? 28) }}px;
+            --print-back-font-size: {{ (int) ($printSettings['back_font_size_px'] ?? 14) }}px;
         }
 
         @page {
@@ -34,34 +45,72 @@
 </head>
 <body class="bg-slate-100 text-slate-800">
     @php
+        $printScope = $printScope ?? 'deck';
+        $selectedDeckIds = $selectedDeckIds ?? [];
+        $levelPrintSubset = $levelPrintSubset ?? false;
         $isCustom = ($printSettings['mode'] ?? 'default') === 'custom';
-        $cards = $deck->categories->flatMap->cards->values();
+        $cards = isset($preloadedPrintCards)
+            ? collect($preloadedPrintCards)->values()
+            : $deck->categories->flatMap->cards->values();
         $perPage = max(1, $printSettings['per_page']);
         $cols = $printSettings['cols'];
         $rows = $printSettings['rows'];
         $pages = $cards->chunk($perPage);
+        $printFormAction = $printScope === 'level'
+            ? route('levels.print', $level)
+            : route('decks.print', $deck);
+        $printOptionsUrl = $printScope === 'level'
+            ? route('levels.print.options', $level)
+            : route('decks.print.options', $deck);
+        $printBackUrl = $printScope === 'level'
+            ? route('levels.show', $level)
+            : route('decks.show', $deck);
     @endphp
 
     <div class="print-toolbar no-print mx-auto max-w-5xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h1 class="text-lg font-bold">طباعة "{{ $deck->name }}"</h1>
-            <p class="text-xs text-slate-500">
-                المستوى: {{ $deck->level?->name ?? '-' }}
-                &middot; الورقة: {{ $printSettings['paper_size'] }}
-                &middot; {{ $perPage }} بطاقة/صفحة ({{ $cols }} × {{ $rows }})
-                &middot; {{ number_format($printSettings['page_width_mm'], 0) }}×{{ number_format($printSettings['page_height_mm'], 0) }}مم
-                &middot; حجم البطاقة: {{ number_format($printSettings['card_width_mm'], 2) }}×{{ number_format($printSettings['card_height_mm'], 2) }}مم (عرض × طول)
-                @if ($isCustom)
-                    &middot; <span class="text-violet-700 font-semibold">وضع التخصيص</span>
-                @endif
-            </p>
+            @if ($printScope === 'level')
+                <h1 class="text-lg font-bold">طباعة المستوى "{{ $level->name }}"</h1>
+                <p class="text-xs text-slate-500">
+                    اللغة: {{ $level->language?->name ?? '-' }}
+                    &middot; {{ count($selectedDeckIds) }} مجموعة
+                    &middot; {{ $cards->count() }} بطاقة
+                    &middot; الورقة: {{ $printSettings['paper_size'] }}
+                    &middot; {{ $perPage }} بطاقة/صفحة ({{ $cols }} × {{ $rows }})
+                    &middot; {{ number_format($printSettings['page_width_mm'], 0) }}×{{ number_format($printSettings['page_height_mm'], 0) }}مم
+                    &middot; حجم البطاقة: {{ number_format($printSettings['card_width_mm'], 2) }}×{{ number_format($printSettings['card_height_mm'], 2) }}مم (عرض × طول)
+                    @if ($isCustom)
+                        &middot; <span class="text-violet-700 font-semibold">وضع التخصيص</span>
+                    @endif
+                </p>
+            @else
+                <h1 class="text-lg font-bold">طباعة "{{ $deck->name }}"</h1>
+                <p class="text-xs text-slate-500">
+                    المستوى: {{ $deck->level?->name ?? '-' }}
+                    &middot; الورقة: {{ $printSettings['paper_size'] }}
+                    &middot; {{ $perPage }} بطاقة/صفحة ({{ $cols }} × {{ $rows }})
+                    &middot; {{ number_format($printSettings['page_width_mm'], 0) }}×{{ number_format($printSettings['page_height_mm'], 0) }}مم
+                    &middot; حجم البطاقة: {{ number_format($printSettings['card_width_mm'], 2) }}×{{ number_format($printSettings['card_height_mm'], 2) }}مم (عرض × طول)
+                    @if ($isCustom)
+                        &middot; <span class="text-violet-700 font-semibold">وضع التخصيص</span>
+                    @endif
+                </p>
+            @endif
             <p class="text-[11px] text-amber-700 mt-1">
                 للطباعة الفعلية اجعل الهوامش "بلا" والقياس "100%".
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if (! $isCustom)
-                <form action="{{ route('decks.print', $deck) }}" method="GET" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm">
+                <form action="{{ $printFormAction }}" method="GET" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm">
+                    @if ($printScope === 'level')
+                        @foreach ($selectedDeckIds as $did)
+                            <input type="hidden" name="deck_ids[]" value="{{ $did }}">
+                        @endforeach
+                        @if ($levelPrintSubset)
+                            <input type="hidden" name="selection" value="1">
+                        @endif
+                    @endif
                     <label class="sr-only" for="print-paper-size">حجم الورقة</label>
                     <select id="print-paper-size" name="paper_size" class="rounded-md border-0 bg-transparent px-1 py-1 text-sm focus:ring-0">
                         <option value="A4" @selected($printSettings['paper_size'] === 'A4')>A4 — 9 بطاقات</option>
@@ -76,16 +125,24 @@
             @else
                 <button type="button" onclick="window.print()" class="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium">طباعة الآن</button>
             @endif
-            <a href="{{ route('decks.print.options', $deck) }}" class="px-3 py-2 rounded-md text-sm border border-slate-300 hover:bg-white">خيارات الطباعة</a>
-            <a href="{{ route('decks.show', $deck) }}" class="px-3 py-2 rounded-md text-sm border border-slate-300 hover:bg-white">رجوع</a>
+            <a href="{{ $printOptionsUrl }}" class="px-3 py-2 rounded-md text-sm border border-slate-300 hover:bg-white">خيارات الطباعة</a>
+            <a href="{{ $printBackUrl }}" class="px-3 py-2 rounded-md text-sm border border-slate-300 hover:bg-white">رجوع</a>
         </div>
     </div>
 
     @if ($isCustom)
         <div class="no-print mx-auto max-w-5xl px-4 pb-4">
-            <form id="custom-print-form" action="{{ route('decks.print', $deck) }}" method="GET"
+            <form id="custom-print-form" action="{{ $printFormAction }}" method="GET"
                   class="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
                 <input type="hidden" name="mode" value="custom">
+                @if ($printScope === 'level')
+                    @foreach ($selectedDeckIds as $did)
+                        <input type="hidden" name="deck_ids[]" value="{{ $did }}">
+                    @endforeach
+                    @if ($levelPrintSubset)
+                        <input type="hidden" name="selection" value="1">
+                    @endif
+                @endif
 
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -149,7 +206,7 @@
                             <span class="text-emerald-700">(عرض × طول)</span>
                         </div>
 
-                        <details class="rounded-lg border border-slate-200 bg-slate-50 p-3" open>
+                        <details class="rounded-lg border border-slate-200 bg-slate-50 p-3">
                             <summary class="cursor-pointer text-xs font-semibold text-slate-700">حدود البطاقة</summary>
                             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                                 <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
@@ -165,6 +222,85 @@
                                     <select name="border_style" class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
                                         @foreach (['solid' => 'متصل', 'dashed' => 'متقطع', 'dotted' => 'منقط', 'double' => 'مزدوج', 'none' => 'بدون'] as $value => $label)
                                             <option value="{{ $value }}" @selected(($printSettings['border_style'] ?? 'solid') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            </div>
+                        </details>
+
+                        <details class="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/40 p-3">
+                            <summary class="cursor-pointer text-xs font-semibold text-indigo-800">الألوان والخط (اختياري)</summary>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <label class="flex items-center gap-2 text-xs font-medium text-slate-600 sm:col-span-2">
+                                    <input type="checkbox" name="unify_backgrounds" value="1" id="unify-backgrounds"
+                                           @checked(! empty($printSettings['unify_backgrounds']))
+                                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    توحيد ألوان الواجهة الأمامية (افتراضي)
+                                </label>
+                                <label class="flex items-center gap-2 text-xs font-medium text-slate-600 sm:col-span-2">
+                                    <input type="checkbox" name="unify_with_back" value="1"
+                                           @checked(! empty($printSettings['unify_with_back']))
+                                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    توحيد مع الواجهة الخلفية
+                                </label>
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    نوع الخلفية الموحدة
+                                    <select name="unified_bg_mode" class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
+                                        @foreach (['solid' => 'لون واحد', 'gradient' => 'ألوان مدمجة'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($printSettings['unified_bg_mode'] ?? 'solid') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    لون الخلفية الموحد
+                                    <input type="color" name="unified_bg_color" id="unified-bg-color"
+                                           value="{{ $printSettings['unified_bg_color'] ?? '#ffffff' }}"
+                                           class="h-10 w-full rounded-md border border-slate-200 bg-white p-1">
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    لون التدرج الأول
+                                    <input type="color" name="unified_bg_color_1"
+                                           value="{{ $printSettings['unified_bg_color_1'] ?? '#a78bfa' }}"
+                                           class="h-10 w-full rounded-md border border-slate-200 bg-white p-1">
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    لون التدرج الثاني
+                                    <input type="color" name="unified_bg_color_2"
+                                           value="{{ $printSettings['unified_bg_color_2'] ?? '#f472b6' }}"
+                                           class="h-10 w-full rounded-md border border-slate-200 bg-white p-1">
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    اتجاه التدرج
+                                    <select name="unified_bg_direction" class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
+                                        @foreach (['135deg' => 'قطري ↘', '45deg' => 'قطري ↗', 'to right' => 'يسار ← يمين', 'to left' => 'يمين ← يسار', 'to bottom' => 'أعلى ↓ أسفل', 'to top' => 'أسفل ↑ أعلى'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($printSettings['unified_bg_direction'] ?? '135deg') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    حجم خط الوجه الأمامي (px)
+                                    <input type="number" name="front_font_size_px" min="8" max="96" step="1"
+                                           value="{{ (int) ($printSettings['front_font_size_px'] ?? 28) }}"
+                                           class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                                    حجم خط الوجه الخلفي (px)
+                                    <input type="number" name="back_font_size_px" min="6" max="60" step="1"
+                                           value="{{ (int) ($printSettings['back_font_size_px'] ?? 14) }}"
+                                           class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
+                                </label>
+
+                                <label class="flex flex-col gap-1 text-xs font-medium text-slate-600 sm:col-span-2">
+                                    تدوير نص الوجه الأمامي
+                                    <select name="front_text_rotate" class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm">
+                                        @foreach (['none' => 'بدون', '90' => '90°', '-90' => '-90°'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($printSettings['front_text_rotate'] ?? 'none') === $value)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </label>
@@ -213,7 +349,7 @@
                 <div class="print-grid" style="grid-template-columns: repeat({{ $cols }}, {{ $printSettings['card_width_mm'] }}mm); grid-template-rows: repeat({{ $pageRows }}, {{ $printSettings['card_height_mm'] }}mm);">
                     @foreach ($frontCards as $card)
                         @if ($card)
-                            <x-flashcard-front :card="$card" class="print-cell" />
+                            <x-flashcard-front :card="$card" :print-settings="$printSettings" class="print-cell" />
                         @else
                             <div class="print-cell print-cell--empty"></div>
                         @endif
@@ -225,7 +361,7 @@
                 <div class="print-grid" style="grid-template-columns: repeat({{ $cols }}, {{ $printSettings['card_width_mm'] }}mm); grid-template-rows: repeat({{ $pageRows }}, {{ $printSettings['card_height_mm'] }}mm);">
                     @foreach ($backCards as $card)
                         @if ($card)
-                            <x-flashcard-back :card="$card" class="print-cell" />
+                            <x-flashcard-back :card="$card" :print-settings="$printSettings" class="print-cell" />
                         @else
                             <div class="print-cell print-cell--empty"></div>
                         @endif
@@ -246,13 +382,13 @@
     @if ($isCustom)
         <script>
             (function () {
-                const STORAGE_KEY = 'deckPrintCustom:{{ $deck->id }}';
+                const STORAGE_KEY = '{{ $printScope === "level" ? "levelPrintCustom:{$level->id}" : "deckPrintCustom:{$deck->id}" }}';
                 const form = document.getElementById('custom-print-form');
                 if (! form) {
                     return;
                 }
 
-                const FIELDS = ['paper_size', 'rows', 'cols', 'page_padding_mm', 'card_gap_mm', 'border_width_mm', 'border_style'];
+                const FIELDS = ['paper_size', 'rows', 'cols', 'page_padding_mm', 'card_gap_mm', 'border_width_mm', 'border_style', 'unify_backgrounds', 'unify_with_back', 'unified_bg_mode', 'unified_bg_color', 'unified_bg_color_1', 'unified_bg_color_2', 'unified_bg_direction', 'front_font_size_px', 'back_font_size_px', 'front_text_rotate'];
                 const paperSizes = {
                     A4: { w: 210, h: 297 },
                     A3: { w: 420, h: 297 },
@@ -265,7 +401,10 @@
                     const data = {};
                     FIELDS.forEach((name) => {
                         const field = form.elements.namedItem(name);
-                        if (field) {
+                        if (!field) return;
+                        if (field.type === 'checkbox') {
+                            data[name] = field.checked ? '1' : '';
+                        } else {
                             data[name] = field.value;
                         }
                     });

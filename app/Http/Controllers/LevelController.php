@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Language;
 use App\Models\Level;
+use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -102,6 +103,73 @@ class LevelController extends Controller
         ];
 
         return view('levels.show', compact('level', 'stats'));
+    }
+
+    public function printOptions(Level $level): View
+    {
+        $level->load([
+            'language',
+            'decks' => fn ($q) => $q->withCount('cards')->latest(),
+        ]);
+
+        return view('levels.print-options', compact('level'));
+    }
+
+    public function print(Request $request, Level $level): View|RedirectResponse
+    {
+        $validated = PrintLayout::validateQuery($request);
+        $printSettings = PrintLayout::settingsFromQuery($validated);
+
+        $level->load([
+            'language',
+            'decks' => fn ($q) => $q->latest()->with([
+                'categories' => fn ($cq) => $cq->orderBy('position')->with([
+                    'cards' => fn ($c) => $c->orderBy('position'),
+                ]),
+            ]),
+        ]);
+
+        $allowedIds = $level->decks->pluck('id')->all();
+        $explicitSubset = $request->query('selection') === '1';
+
+        $rawDeckIds = $request->input('deck_ids', []);
+        if (! is_array($rawDeckIds)) {
+            $rawDeckIds = [];
+        }
+        $rawDeckIds = array_values(array_unique(array_filter(array_map('intval', $rawDeckIds))));
+
+        if ($explicitSubset) {
+            if (count($rawDeckIds) === 0) {
+                return redirect()
+                    ->route('levels.print.options', $level)
+                    ->with('status', 'اختر مجموعة واحدة على الأقل للطباعة.');
+            }
+
+            $selectedDeckIds = array_values(array_intersect($rawDeckIds, $allowedIds));
+            if (count($selectedDeckIds) === 0) {
+                return redirect()
+                    ->route('levels.print.options', $level)
+                    ->with('status', 'المجموعات المحددة غير صالحة لهذا المستوى.');
+            }
+        } else {
+            $selectedDeckIds = $allowedIds;
+        }
+
+        $selectedSet = array_flip($selectedDeckIds);
+        $cards = $level->decks
+            ->filter(fn ($deck) => isset($selectedSet[$deck->id]))
+            ->flatMap(fn ($deck) => $deck->categories->flatMap->cards)
+            ->values();
+
+        return view('decks.print', [
+            'deck' => null,
+            'level' => $level,
+            'printSettings' => $printSettings,
+            'printScope' => 'level',
+            'preloadedPrintCards' => $cards,
+            'selectedDeckIds' => $selectedDeckIds,
+            'levelPrintSubset' => $explicitSubset,
+        ]);
     }
 
     public function edit(Level $level): View

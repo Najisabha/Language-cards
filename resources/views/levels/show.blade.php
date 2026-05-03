@@ -19,7 +19,10 @@
             <h1 class="page-title">{{ $level->name }}</h1>
             <p class="page-subtitle">{{ $level->title ?: 'هذا المستوى يحتوي على مجموعاتك التعليمية، وكل مجموعة تضم التصنيفات والبطاقات الخاصة بها.' }}</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            @if (! $level->decks->isEmpty())
+                <a href="{{ route('levels.print.options', $level) }}" class="btn btn-secondary">طباعة</a>
+            @endif
             <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
             <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ مجموعة جديدة</a>
         </div>

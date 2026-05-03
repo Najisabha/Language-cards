@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CardAiSuggestController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DeckController;
@@ -9,7 +10,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('languages.index'));
 
+Route::post('cards/ai-suggest', CardAiSuggestController::class)
+    ->middleware('throttle:20,1')
+    ->name('cards.ai-suggest');
+
 Route::resource('languages', LanguageController::class);
+Route::get('levels/{level}/print/options', [LevelController::class, 'printOptions'])->name('levels.print.options');
+Route::get('levels/{level}/print', [LevelController::class, 'print'])->name('levels.print');
 Route::resource('levels', LevelController::class);
 Route::resource('decks', DeckController::class);
 Route::get('decks/{deck}/print/options', [DeckController::class, 'printOptions'])->name('decks.print.options');
