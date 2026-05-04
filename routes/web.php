@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CardAiIconImageController;
 use App\Http\Controllers\CardAiSuggestController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\CategoryController;
@@ -13,6 +14,10 @@ Route::get('/', fn () => redirect()->route('languages.index'));
 Route::post('cards/ai-suggest', CardAiSuggestController::class)
     ->middleware('throttle:20,1')
     ->name('cards.ai-suggest');
+
+Route::post('cards/ai-icon-image', CardAiIconImageController::class)
+    ->middleware('throttle:8,1')
+    ->name('cards.ai-icon-image');
 
 Route::resource('languages', LanguageController::class);
 Route::get('levels/{level}/print/options', [LevelController::class, 'printOptions'])->name('levels.print.options');

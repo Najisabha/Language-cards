@@ -42,4 +42,12 @@ return [
         'timeout' => env('AI_TIMEOUT', 45),
     ],
 
+    /*
+    | Fetch card icon images from Wikimedia Commons (no API key). Respect their User-Agent policy.
+    */
+    'icon_image_fetch' => [
+        'user_agent' => env('ICON_IMAGE_FETCH_USER_AGENT'),
+        'max_bytes' => env('ICON_IMAGE_FETCH_MAX_BYTES', 2097152),
+    ],
+
 ];

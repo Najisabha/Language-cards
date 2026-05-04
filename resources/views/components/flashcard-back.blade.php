@@ -1,9 +1,7 @@
 @props(['card', 'printSettings' => null])
 
 @php
-    $iconImageUrl = $card->icon_image_path
-        ? \Illuminate\Support\Facades\Storage::disk('public')->url($card->icon_image_path)
-        : null;
+    $iconImageUrl = $card->iconImageUrl();
     $hasIconImage = $card->show_icon && $iconImageUrl;
     $hasIconEmoji = $card->show_icon && ! $hasIconImage && $card->icon;
     $hasMedia = $hasIconImage || $hasIconEmoji;

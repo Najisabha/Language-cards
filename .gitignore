@@ -16,6 +16,8 @@
 /public/build
 /public/hot
 /public/storage
+/public/uploads/card-icons/*
+!/public/uploads/card-icons/.gitkeep
 /storage/*.key
 /storage/pail
 /vendor

@@ -15,7 +15,7 @@
     $initialFrontValue = old('front_bg_value', $card->front_bg_value ?? '#ffffff');
     $isGradient = (bool) preg_match('/^(linear|radial|conic)-gradient/i', $initialFrontValue);
     $initialColorMode = old('front_color_mode', $isGradient ? 'gradient' : 'solid');
-    $iconImageUrl = $card->icon_image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($card->icon_image_path) : null;
+    $iconImageUrl = $card->iconImageUrl();
 @endphp
 
 <div class="grid lg:grid-cols-3 gap-6">
@@ -140,11 +140,18 @@
                                    class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <p class="text-xs text-slate-500 mt-1">إيموجي نصي.</p>
                         </div>
-                        <div>
+                        <div data-ai-icon-url="{{ route('cards.ai-icon-image') }}">
                             <label for="icon_image" class="sr-only">صورة الأيقونة</label>
-                            <input type="file" id="icon_image" name="icon_image" accept="image/*"
-                                   class="w-full text-sm text-slate-700 file:ml-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:text-indigo-700 hover:file:bg-indigo-100">
-                            <p class="text-xs text-slate-500 mt-1">رفع صورة (تأخذ الأولوية على الإيموجي).</p>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <input type="file" id="icon_image" name="icon_image" accept="image/*"
+                                       class="flex-1 min-w-[10rem] text-sm text-slate-700 file:ml-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:text-indigo-700 hover:file:bg-indigo-100">
+                                <button type="button" id="ai-icon-btn"
+                                        class="shrink-0 px-3 py-2 rounded-md border border-violet-200 bg-violet-50 text-violet-800 text-sm font-semibold hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                                    صورة من الويب
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">رفع صورة (تأخذ الأولوية على الإيموجي)، أو جلب صورة مجانية من ويكيميديا كومنز بحسب الكلمة في الوجه الأمامي.</p>
+                            <p id="ai-icon-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
                             @error('icon_image') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
 
                             @if ($iconImageUrl)
@@ -464,6 +471,91 @@
             } finally {
                 aiSuggestBtn.disabled = false;
                 aiSuggestBtn.textContent = prevText;
+            }
+        });
+    }
+
+    const aiIconBtn = byId('ai-icon-btn');
+    const aiIconError = byId('ai-icon-error');
+    const aiIconUrl = qs('[data-ai-icon-url]')?.getAttribute('data-ai-icon-url');
+
+    const setAiIconError = (msg) => {
+        if (!aiIconError) return;
+        if (msg) {
+            aiIconError.textContent = msg;
+            aiIconError.classList.remove('hidden');
+        } else {
+            aiIconError.textContent = '';
+            aiIconError.classList.add('hidden');
+        }
+    };
+
+    const base64ToFile = (base64, mime, filename) => {
+        const bin = atob(base64);
+        const len = bin.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) bytes[i] = bin.charCodeAt(i);
+        return new File([bytes], filename, { type: mime || 'image/png' });
+    };
+
+    word?.addEventListener('input', () => setAiIconError(''));
+
+    if (aiIconBtn && aiIconUrl && iconImage) {
+        aiIconBtn.addEventListener('click', async () => {
+            setAiIconError('');
+            const w = (word?.value || '').trim();
+            if (!w) {
+                setAiIconError('أدخل كلمة في الوجه الأمامي أولًا.');
+                return;
+            }
+            const tokenInput = document.querySelector('input[name="_token"]');
+            const token = tokenInput?.value;
+            if (!token) {
+                setAiIconError('تعذر التحقق من الجلسة. حدّث الصفحة.');
+                return;
+            }
+            const prevLabel = aiIconBtn.textContent;
+            aiIconBtn.disabled = true;
+            aiIconBtn.textContent = '…';
+            try {
+                const res = await fetch(aiIconUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ word: w }),
+                });
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    data = {};
+                }
+                if (!res.ok) {
+                    setAiIconError(data.message || 'تعذر توليد الصورة.');
+                    return;
+                }
+                const b64 = data.image_base64;
+                const mime = data.mime || 'image/png';
+                if (typeof b64 !== 'string' || !b64) {
+                    setAiIconError('استجابة غير صالحة من الخادم.');
+                    return;
+                }
+                const file = base64ToFile(b64, mime, `ai-icon-${Date.now()}.png`);
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                iconImage.files = dt.files;
+                if (removeIconImage) removeIconImage.checked = false;
+                if (showIcon) showIcon.checked = true;
+                iconImage.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch {
+                setAiIconError('تعذر الاتصال بالخادم.');
+            } finally {
+                aiIconBtn.disabled = false;
+                aiIconBtn.textContent = prevLabel;
             }
         });
     }

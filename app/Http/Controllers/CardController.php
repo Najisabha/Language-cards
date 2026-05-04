@@ -74,9 +74,7 @@ class CardController extends Controller
     {
         $deckId = $card->deck_id;
 
-        if ($card->icon_image_path) {
-            Storage::disk('public')->delete($card->icon_image_path);
-        }
+        $this->deleteStoredIconImage($card->icon_image_path);
 
         $card->delete();
 
@@ -126,20 +124,37 @@ class CardController extends Controller
 
         if ($request->hasFile('icon_image')) {
             if ($existingPath) {
-                Storage::disk('public')->delete($existingPath);
+                $this->deleteStoredIconImage($existingPath);
             }
 
-            return $request->file('icon_image')->store('card-icons', 'public');
+            return $request->file('icon_image')->store('card-icons', 'card_uploads');
         }
 
         if ($request->boolean('remove_icon_image')) {
             if ($existingPath) {
-                Storage::disk('public')->delete($existingPath);
+                $this->deleteStoredIconImage($existingPath);
             }
             return null;
         }
 
         return $existingPath;
+    }
+
+    private function deleteStoredIconImage(?string $path): void
+    {
+        if (! $path) {
+            return;
+        }
+
+        if (Storage::disk('card_uploads')->exists($path)) {
+            Storage::disk('card_uploads')->delete($path);
+
+            return;
+        }
+
+        if (Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     private function sanitizeFrontBgValue(string $type, string $value): string
