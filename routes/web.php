@@ -19,6 +19,10 @@ Route::post('cards/ai-icon-image', CardAiIconImageController::class)
     ->middleware('throttle:8,1')
     ->name('cards.ai-icon-image');
 
+Route::post('cards/check-duplicate-word', [CardController::class, 'checkWordDuplicate'])
+    ->middleware('throttle:30,1')
+    ->name('cards.check-duplicate-word');
+
 Route::resource('languages', LanguageController::class);
 Route::get('levels/{level}/print/options', [LevelController::class, 'printOptions'])->name('levels.print.options');
 Route::get('levels/{level}/print', [LevelController::class, 'print'])->name('levels.print');

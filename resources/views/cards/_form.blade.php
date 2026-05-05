@@ -24,7 +24,10 @@
             سيتم حفظ هذه البطاقة داخل المجموعة: <strong>{{ $deck->name }}</strong>
         </div>
 
-        <div data-ai-suggest-url="{{ route('cards.ai-suggest') }}">
+        <div data-ai-suggest-url="{{ route('cards.ai-suggest') }}"
+             data-duplicate-check-url="{{ route('cards.check-duplicate-word') }}"
+             data-deck-id="{{ $deck->id }}"
+             data-card-id="{{ $card->id ?? '' }}">
             <label for="word" class="block text-sm font-medium mb-1">الكلمة (تظهر في الوجه الأمامي) <span class="text-red-500">*</span></label>
             <div class="flex flex-wrap gap-2 items-stretch">
                 <input type="text" id="word" name="word" required maxlength="120" dir="ltr"
@@ -36,6 +39,7 @@
                 </button>
             </div>
             <p id="ai-suggest-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
+            <p id="duplicate-word-warning" class="text-xs text-amber-600 mt-1 hidden" role="alert">هذه الكلمة موجودة بالفعل في نفس اللغة.</p>
             @error('word') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -401,6 +405,13 @@
     const aiSuggestBtn = byId('ai-suggest-btn');
     const aiSuggestError = byId('ai-suggest-error');
     const aiSuggestUrl = qs('[data-ai-suggest-url]')?.getAttribute('data-ai-suggest-url');
+    const duplicateWarning = byId('duplicate-word-warning');
+    const duplicateCheckBox = qs('[data-duplicate-check-url]');
+    const duplicateCheckUrl = duplicateCheckBox?.getAttribute('data-duplicate-check-url');
+    const duplicateDeckId = duplicateCheckBox?.getAttribute('data-deck-id');
+    const duplicateCardId = duplicateCheckBox?.getAttribute('data-card-id');
+    let duplicateCheckTimer = null;
+    let duplicateCheckSeq = 0;
 
     const setAiError = (msg) => {
         if (!aiSuggestError) return;
@@ -413,7 +424,59 @@
         }
     };
 
-    word?.addEventListener('input', () => setAiError(''));
+    const setDuplicateWarning = (visible) => {
+        if (!duplicateWarning) return;
+        duplicateWarning.classList.toggle('hidden', !visible);
+    };
+
+    const checkDuplicateWord = async () => {
+        if (!duplicateCheckUrl || !word || !duplicateDeckId) return;
+        const rawWord = (word.value || '').trim();
+        if (!rawWord) {
+            setDuplicateWarning(false);
+            return;
+        }
+
+        const tokenInput = document.querySelector('input[name="_token"]');
+        const token = tokenInput?.value;
+        if (!token) return;
+
+        const seq = ++duplicateCheckSeq;
+        try {
+            const res = await fetch(duplicateCheckUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    word: rawWord,
+                    deck_id: Number(duplicateDeckId),
+                    card_id: duplicateCardId ? Number(duplicateCardId) : null,
+                }),
+            });
+            if (!res.ok || seq !== duplicateCheckSeq) return;
+            const data = await res.json();
+            setDuplicateWarning(!!data.duplicate);
+        } catch {
+            // Keep the form usable even if live check fails.
+        }
+    };
+
+    const scheduleDuplicateCheck = () => {
+        if (duplicateCheckTimer) window.clearTimeout(duplicateCheckTimer);
+        duplicateCheckTimer = window.setTimeout(() => {
+            checkDuplicateWord();
+        }, 300);
+    };
+
+    word?.addEventListener('input', () => {
+        setAiError('');
+        setDuplicateWarning(false);
+        scheduleDuplicateCheck();
+    });
 
     if (aiSuggestBtn && aiSuggestUrl) {
         aiSuggestBtn.addEventListener('click', async () => {
@@ -559,5 +622,7 @@
             }
         });
     }
+
+    scheduleDuplicateCheck();
 })();
 </script>

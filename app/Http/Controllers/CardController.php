@@ -6,8 +6,10 @@ use App\Models\Card;
 use App\Models\Category;
 use App\Models\Deck;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CardController extends Controller
@@ -22,7 +24,7 @@ class CardController extends Controller
     public function storeForDeck(Request $request, Deck $deck): RedirectResponse
     {
         $category = $this->defaultCategory($deck);
-        $data = $this->validateCard($request);
+        $data = $this->validateCard($request, null, $deck);
         $data['deck_id'] = $deck->id;
         $data['category_id'] = $category->id;
         $data['position'] = (int) ($deck->cards()->max('cards.position') ?? 0) + 1;
@@ -40,7 +42,7 @@ class CardController extends Controller
 
     public function store(Request $request, Category $category): RedirectResponse
     {
-        $data = $this->validateCard($request);
+        $data = $this->validateCard($request, null, $category->deck);
         $data['deck_id'] = $category->deck_id;
         $data['category_id'] = $category->id;
         $data['position'] = (int) ($category->cards()->max('position') ?? 0) + 1;
@@ -61,7 +63,7 @@ class CardController extends Controller
 
     public function update(Request $request, Card $card): RedirectResponse
     {
-        $data = $this->validateCard($request, $card);
+        $data = $this->validateCard($request, $card, $card->deck);
         $data['category_id'] = $card->category_id;
         $data['deck_id'] = $card->deck_id;
 
@@ -81,7 +83,22 @@ class CardController extends Controller
         return redirect()->route('decks.show', $deckId)->with('status', 'تم حذف البطاقة.');
     }
 
-    private function validateCard(Request $request, ?Card $card = null): array
+    public function checkWordDuplicate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'word' => ['required', 'string', 'max:120'],
+            'deck_id' => ['required', 'integer', 'exists:decks,id'],
+            'card_id' => ['nullable', 'integer', 'exists:cards,id'],
+        ]);
+
+        $deck = Deck::query()->with('level')->find($validated['deck_id']);
+        $card = isset($validated['card_id']) ? Card::find($validated['card_id']) : null;
+        $duplicate = $this->hasDuplicateWordInLanguage($validated['word'], $deck, $card);
+
+        return response()->json(['duplicate' => $duplicate]);
+    }
+
+    private function validateCard(Request $request, ?Card $card = null, ?Deck $deck = null): array
     {
         $validated = $request->validate([
             'word' => ['required', 'string', 'max:120'],
@@ -114,8 +131,45 @@ class CardController extends Controller
         ];
 
         $data['icon_image_path'] = $this->resolveIconImagePath($request, $card);
+        $this->ensureUniqueWordPerLanguage($data['word'], $deck, $card);
 
         return $data;
+    }
+
+    private function ensureUniqueWordPerLanguage(string $word, ?Deck $deck, ?Card $card = null): void
+    {
+        if ($this->hasDuplicateWordInLanguage($word, $deck, $card)) {
+            throw ValidationException::withMessages([
+                'word' => 'هذه الكلمة موجودة بالفعل في نفس اللغة. اختر كلمة مختلفة.',
+            ]);
+        }
+    }
+
+    private function hasDuplicateWordInLanguage(string $word, ?Deck $deck, ?Card $card = null): bool
+    {
+        $languageId = $deck?->level?->language_id ?? $deck?->level()->value('language_id');
+        if (! $languageId) {
+            return false;
+        }
+
+        $normalizedWord = mb_strtolower(trim($word), 'UTF-8');
+        if ($normalizedWord === '') {
+            return false;
+        }
+
+        $query = Card::query()
+            ->select('cards.id')
+            ->join('categories', 'categories.id', '=', 'cards.category_id')
+            ->join('decks', 'decks.id', '=', 'categories.deck_id')
+            ->join('levels', 'levels.id', '=', 'decks.level_id')
+            ->where('levels.language_id', $languageId)
+            ->whereRaw('LOWER(TRIM(cards.word)) = ?', [$normalizedWord]);
+
+        if ($card) {
+            $query->where('cards.id', '!=', $card->id);
+        }
+
+        return $query->exists();
     }
 
     private function resolveIconImagePath(Request $request, ?Card $card): ?string
