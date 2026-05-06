@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Services\CardWebIconImageFetcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
