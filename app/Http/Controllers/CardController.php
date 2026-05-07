@@ -108,7 +108,13 @@ class CardController extends Controller
             'ar_meaning' => ['nullable', 'string', 'max:255'],
             'explanation' => ['nullable', 'string', 'max:1000'],
             'icon' => ['nullable', 'string', 'max:16'],
-            'icon_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:2048'],
+            'icon_image' => [
+                'nullable',
+                'file',
+                'max:2048',
+                'mimes:jpg,jpeg,png,webp,gif,svg',
+                'mimetypes:image/jpeg,image/png,image/webp,image/gif,image/svg+xml',
+            ],
             'remove_icon_image' => ['sometimes', 'boolean'],
             'show_en' => ['sometimes', 'boolean'],
             'show_ar' => ['sometimes', 'boolean'],
@@ -227,7 +233,29 @@ class CardController extends Controller
             return $value;
         }
 
+        if ($this->isSafeColorKeyword($value)) {
+            return strtolower($value);
+        }
+
         return '#ffffff';
+    }
+
+    private function isSafeColorKeyword(string $value): bool
+    {
+        $value = trim($value);
+
+        if (! preg_match('/^[a-zA-Z]{3,25}$/', $value)) {
+            return false;
+        }
+
+        $forbidden = ['url', 'expression', 'javascript', '<', '>', '"', "'"];
+        foreach ($forbidden as $needle) {
+            if (stripos($value, $needle) !== false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isSafeGradient(string $value): bool

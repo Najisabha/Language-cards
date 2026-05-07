@@ -255,6 +255,7 @@
 
     const isHex = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
     const isGradient = (value) => /^(linear|radial|conic)-gradient\s*\(.+\)$/i.test(value);
+    const isColorKeyword = (value) => /^[a-zA-Z]{3,25}$/.test((value || '').trim());
     const setVisible = (el, visible) => el && el.classList.toggle('hidden', !visible);
     const currentFrontType = () => (qs('input[name="front_bg_type"]:checked') || {}).value || 'color';
     const currentColorMode = () => (qs('input[name="front_color_mode"]:checked') || {}).value || 'solid';
@@ -295,6 +296,8 @@
             previewFront.style.background = value;
         } else if (isHex(value)) {
             previewFront.style.backgroundColor = value;
+        } else if (isColorKeyword(value)) {
+            previewFront.style.backgroundColor = value.trim();
         } else {
             previewFront.style.backgroundColor = '#ffffff';
         }
