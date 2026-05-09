@@ -39,7 +39,12 @@
         </div>
     </section>
 
-    @if ($cards->isEmpty())
+    @php
+        $allCount = $totalCardsCount ?? $cards->count();
+        $currentQ = $q ?? request('q');
+    @endphp
+
+    @if ($allCount === 0)
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد بطاقات داخل هذه المجموعة بعد.</p>
             <a href="{{ route('decks.cards.create', $deck) }}" class="btn btn-primary">أضف أول بطاقة</a>
@@ -48,9 +53,41 @@
         <section>
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-lg font-bold text-slate-900">بطاقات المجموعة</h2>
-                <span class="text-sm text-slate-500">{{ $cards->count() }} بطاقة</span>
+                <span class="text-sm text-slate-500">
+                    {{ $cards->count() }} بطاقة
+                    @if(isset($totalCardsCount) && $totalCardsCount !== $cards->count())
+                        <span class="mx-1">·</span>
+                        <span>من أصل {{ $totalCardsCount }}</span>
+                    @endif
+                </span>
             </div>
 
+            <form method="GET" action="{{ route('decks.show', $deck) }}" class="mb-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div class="flex-1">
+                        <label for="card-search" class="sr-only">بحث</label>
+                        <input
+                            id="card-search"
+                            name="q"
+                            value="{{ $currentQ }}"
+                            placeholder="ابحث بالكلمة أو المعنى أو الشرح..."
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/60"
+                        />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="submit" class="btn btn-secondary">بحث</button>
+                        @if(! empty($currentQ))
+                            <a href="{{ route('decks.show', $deck) }}" class="btn btn-secondary">مسح</a>
+                        @endif
+                    </div>
+                </div>
+            </form>
+
+            @if($cards->isEmpty())
+                <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                    <p class="text-slate-500">لا توجد نتائج مطابقة.</p>
+                </div>
+            @else
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($cards as $card)
                     <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -77,6 +114,7 @@
                     </article>
                 @endforeach
             </div>
+            @endif
         </section>
     @endif
 @endsection
