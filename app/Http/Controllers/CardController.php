@@ -98,6 +98,7 @@ class CardController extends Controller
         return response()->json(['duplicate' => $duplicate]);
     }
 
+    
     private function validateCard(Request $request, ?Card $card = null, ?Deck $deck = null): array
     {
         $validated = $request->validate([
