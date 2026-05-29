@@ -99,8 +99,6 @@ class CardController extends Controller
     }
 
 
-
-
     private function validateCard(Request $request, ?Card $card = null, ?Deck $deck = null): array
     {
         $validated = $request->validate([
