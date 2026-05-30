@@ -13,9 +13,9 @@
 
     $initialFrontType = old('front_bg_type', $card->front_bg_type ?? 'color');
     $initialFrontValue = old('front_bg_value', $card->front_bg_value ?? '#ffffff');
-    $isGradient = (bool) preg_match('/^(linear|radial|conic)-gradient/i', $initialFrontValue);
-    $initialColorMode = old('front_color_mode', $isGradient ? 'gradient' : 'solid');
     $iconImageUrl = $card->iconImageUrl();
+    $deck->loadMissing('level.language');
+    $studyLanguageName = $deck->level?->language?->name ?? 'اللغة المختارة';
 @endphp
 
 <div class="grid lg:grid-cols-3 gap-6">
@@ -41,90 +41,23 @@
             <p id="ai-suggest-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
             <p id="duplicate-word-warning" class="text-xs text-amber-600 mt-1 hidden" role="alert">هذه الكلمة موجودة بالفعل في نفس اللغة.</p>
             @error('word') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+            @error('front_bg_type') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+            @error('front_bg_value') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <fieldset class="rounded-lg border border-slate-200 p-4">
-            <legend class="px-2 text-sm font-semibold">الوجه الأمامي</legend>
-            <div class="flex flex-wrap items-center gap-4 mb-3">
-                <label class="inline-flex items-center gap-2 text-sm">
-                    <input type="radio" name="front_bg_type" value="color" {{ $initialFrontType === 'color' ? 'checked' : '' }}>
-                    لون خلفية
-                </label>
-                <label class="inline-flex items-center gap-2 text-sm">
-                    <input type="radio" name="front_bg_type" value="image" {{ $initialFrontType === 'image' ? 'checked' : '' }}>
-                    رابط صورة
-                </label>
-            </div>
-
-            <div data-front-color-options class="{{ $initialFrontType === 'color' ? '' : 'hidden' }} mb-3">
-                <div class="flex flex-wrap items-center gap-4 text-sm">
-                    <label class="inline-flex items-center gap-2">
-                        <input type="radio" name="front_color_mode" value="solid" {{ $initialColorMode === 'solid' ? 'checked' : '' }}>
-                        لون واحد
-                    </label>
-                    <label class="inline-flex items-center gap-2">
-                        <input type="radio" name="front_color_mode" value="gradient" {{ $initialColorMode === 'gradient' ? 'checked' : '' }}>
-                        ألوان مدموجة (تدرج)
-                    </label>
-                </div>
-            </div>
-
-            <div data-gradient-builder class="{{ $initialFrontType === 'color' && $initialColorMode === 'gradient' ? '' : 'hidden' }} mb-3 p-3 rounded-md bg-slate-50 border border-slate-200">
-                <p class="text-xs font-semibold text-slate-600 mb-2">منشئ التدرج</p>
-                <div class="grid sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs text-slate-600 mb-1">اللون الأول</label>
-                        <input type="color" data-gradient-color-1 value="#a78bfa" class="w-full h-10 rounded border border-slate-300 cursor-pointer">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-600 mb-1">اللون الثاني</label>
-                        <input type="color" data-gradient-color-2 value="#f472b6" class="w-full h-10 rounded border border-slate-300 cursor-pointer">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-600 mb-1">الاتجاه</label>
-                        <select data-gradient-direction class="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
-                            <option value="135deg">قطري (↘)</option>
-                            <option value="45deg">قطري (↗)</option>
-                            <option value="to right">يسار → يمين</option>
-                            <option value="to left">يمين → يسار</option>
-                            <option value="to bottom">أعلى → أسفل</option>
-                            <option value="to top">أسفل → أعلى</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-600 mb-2">تدرجات جاهزة</p>
-                    <div class="flex flex-wrap gap-2" data-gradient-presets>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #a78bfa, #f472b6);" data-preset="linear-gradient(135deg, #a78bfa, #f472b6)" title="بنفسجي وردي"></button>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #fde68a, #fb7185);" data-preset="linear-gradient(135deg, #fde68a, #fb7185)" title="أصفر مرجاني"></button>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #60a5fa, #34d399);" data-preset="linear-gradient(135deg, #60a5fa, #34d399)" title="أزرق أخضر"></button>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #f97316, #ec4899);" data-preset="linear-gradient(135deg, #f97316, #ec4899)" title="برتقالي وردي"></button>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #0ea5e9, #6366f1);" data-preset="linear-gradient(135deg, #0ea5e9, #6366f1)" title="سماوي بنفسجي"></button>
-                        <button type="button" class="h-8 w-12 rounded border border-slate-200 cursor-pointer" style="background: linear-gradient(135deg, #1f2937, #6b7280);" data-preset="linear-gradient(135deg, #1f2937, #6b7280)" title="رمادي داكن"></button>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label for="front_bg_value" class="block text-sm font-medium mb-1">قيمة الخلفية</label>
-                <input type="text" id="front_bg_value" name="front_bg_value" value="{{ $initialFrontValue }}" dir="ltr"
-                       placeholder="#ffffff أو linear-gradient(135deg, #a78bfa, #f472b6) أو رابط صورة"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-slate-500 mt-1">
-                    استخدم Hex مثل <code dir="ltr">#fce7f3</code>، أو تدرج CSS مثل
-                    <code dir="ltr">linear-gradient(135deg, #a78bfa, #f472b6)</code>.
-                </p>
-                @error('front_bg_value') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
-        </fieldset>
+        <input type="hidden" name="front_bg_type" value="{{ $initialFrontType }}">
+        <input type="hidden" name="front_bg_value" id="front_bg_value" value="{{ $initialFrontValue }}">
 
         <fieldset class="rounded-lg border border-slate-200 p-4">
             <legend class="px-2 text-sm font-semibold">الوجه الخلفي</legend>
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                    <label for="en_meaning" class="block text-sm font-medium mb-1">المعنى بالإنجليزية</label>
-                    <input type="text" id="en_meaning" name="en_meaning" maxlength="255" dir="ltr" value="{{ old('en_meaning', $card->en_meaning) }}"
+                    <label for="en_meaning" class="block text-sm font-medium mb-1">نطق الكلمة بالعربية ({{ $studyLanguageName }})</label>
+                    <input type="text" id="en_meaning" name="en_meaning" maxlength="255" dir="rtl"
+                           value="{{ old('en_meaning', $card->en_meaning) }}"
+                           placeholder="مثال: ويلكم"
                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-xs text-slate-500 mt-1">اكتب نطق الكلمة في الوجه الأمامي بحروف عربية لتسهيل القراءة.</p>
                 </div>
                 <div>
                     <label for="ar_meaning" class="block text-sm font-medium mb-1">المعنى بالعربية</label>
@@ -172,7 +105,7 @@
             </div>
 
             <div class="mt-4 grid sm:grid-cols-2 gap-2 text-sm">
-                <label class="inline-flex items-center gap-2"><input type="checkbox" id="show_en" name="show_en" value="1" {{ old('show_en', $card->show_en) ? 'checked' : '' }}> إظهار المعنى بالإنجليزية</label>
+                <label class="inline-flex items-center gap-2"><input type="checkbox" id="show_en" name="show_en" value="1" {{ old('show_en', $card->show_en) ? 'checked' : '' }}> إظهار النطق بالعربية</label>
                 <label class="inline-flex items-center gap-2"><input type="checkbox" id="show_ar" name="show_ar" value="1" {{ old('show_ar', $card->show_ar) ? 'checked' : '' }}> إظهار المعنى بالعربية</label>
                 <label class="inline-flex items-center gap-2"><input type="checkbox" id="show_explanation" name="show_explanation" value="1" {{ old('show_explanation', $card->show_explanation) ? 'checked' : '' }}> إظهار الشرح</label>
                 <label class="inline-flex items-center gap-2"><input type="checkbox" id="show_icon" name="show_icon" value="1" {{ old('show_icon', $card->show_icon) ? 'checked' : '' }}> إظهار الأيقونة</label>
@@ -199,7 +132,7 @@
                     </div>
                     <div class="flashcard-back-text">
                         <p id="preview-ar" class="flashcard-back-ar {{ old('show_ar', $card->show_ar) && old('ar_meaning', $card->ar_meaning) ? '' : 'hidden' }}">{{ old('ar_meaning', $card->ar_meaning) }}</p>
-                        <p id="preview-en" class="flashcard-back-en {{ old('show_en', $card->show_en) && old('en_meaning', $card->en_meaning) ? '' : 'hidden' }}" dir="ltr">{{ old('en_meaning', $card->en_meaning) }}</p>
+                        <p id="preview-en" class="flashcard-back-en {{ old('show_en', $card->show_en) && old('en_meaning', $card->en_meaning) ? '' : 'hidden' }}" dir="rtl">{{ old('en_meaning', $card->en_meaning) }}</p>
                         <p id="preview-explanation" class="flashcard-back-explanation {{ old('show_explanation', $card->show_explanation) && old('explanation', $card->explanation) ? '' : 'hidden' }}">{{ old('explanation', $card->explanation) }}</p>
                     </div>
                 </div>
@@ -220,14 +153,7 @@
 
     const word = byId('word');
     const frontBgValue = byId('front_bg_value');
-    const frontBgTypeInputs = qsa('input[name="front_bg_type"]');
-    const colorModeInputs = qsa('input[name="front_color_mode"]');
-    const colorOptionsBox = qs('[data-front-color-options]');
-    const gradientBuilder = qs('[data-gradient-builder]');
-    const gradientColor1 = qs('[data-gradient-color-1]');
-    const gradientColor2 = qs('[data-gradient-color-2]');
-    const gradientDirection = qs('[data-gradient-direction]');
-    const gradientPresets = qsa('[data-gradient-presets] [data-preset]');
+    const frontBgTypeInput = qs('input[name="front_bg_type"]');
 
     const enMeaning = byId('en_meaning');
     const arMeaning = byId('ar_meaning');
@@ -257,22 +183,7 @@
     const isGradient = (value) => /^(linear|radial|conic)-gradient\s*\(.+\)$/i.test(value);
     const isColorKeyword = (value) => /^[a-zA-Z]{3,25}$/.test((value || '').trim());
     const setVisible = (el, visible) => el && el.classList.toggle('hidden', !visible);
-    const currentFrontType = () => (qs('input[name="front_bg_type"]:checked') || {}).value || 'color';
-    const currentColorMode = () => (qs('input[name="front_color_mode"]:checked') || {}).value || 'solid';
-
-    const buildGradient = () => {
-        const c1 = gradientColor1?.value || '#a78bfa';
-        const c2 = gradientColor2?.value || '#f472b6';
-        const dir = gradientDirection?.value || '135deg';
-        return `linear-gradient(${dir}, ${c1}, ${c2})`;
-    };
-
-    const syncBuilderVisibility = () => {
-        const type = currentFrontType();
-        const mode = currentColorMode();
-        setVisible(colorOptionsBox, type === 'color');
-        setVisible(gradientBuilder, type === 'color' && mode === 'gradient');
-    };
+    const currentFrontType = () => frontBgTypeInput?.value || 'color';
 
     const applyFrontPreview = () => {
         if (!previewFront) return;
@@ -346,42 +257,9 @@
         }
     };
 
-    [word, frontBgValue, enMeaning, arMeaning, explanation, icon, showEn, showAr, showExplanation, showIcon]
+    [word, enMeaning, arMeaning, explanation, icon, showEn, showAr, showExplanation, showIcon]
         .filter(Boolean)
         .forEach((el) => el.addEventListener('input', render));
-
-    frontBgTypeInputs.forEach((radio) => radio.addEventListener('change', () => {
-        syncBuilderVisibility();
-        render();
-    }));
-
-    colorModeInputs.forEach((radio) => radio.addEventListener('change', () => {
-        syncBuilderVisibility();
-        if (currentColorMode() === 'gradient' && frontBgValue) {
-            frontBgValue.value = buildGradient();
-        }
-        render();
-    }));
-
-    [gradientColor1, gradientColor2, gradientDirection].filter(Boolean).forEach((el) => {
-        el.addEventListener('input', () => {
-            if (frontBgValue) frontBgValue.value = buildGradient();
-            render();
-        });
-        el.addEventListener('change', () => {
-            if (frontBgValue) frontBgValue.value = buildGradient();
-            render();
-        });
-    });
-
-    gradientPresets.forEach((btn) => btn.addEventListener('click', () => {
-        const value = btn.getAttribute('data-preset') || '';
-        if (frontBgValue) frontBgValue.value = value;
-        const colorRadio = qs('input[name="front_color_mode"][value="gradient"]');
-        if (colorRadio) colorRadio.checked = true;
-        syncBuilderVisibility();
-        render();
-    }));
 
     if (iconImage) {
         iconImage.addEventListener('change', () => {
@@ -402,7 +280,6 @@
         removeIconImage.addEventListener('change', render);
     }
 
-    syncBuilderVisibility();
     render();
 
     const aiSuggestBtn = byId('ai-suggest-btn');
@@ -507,7 +384,10 @@
                         'X-CSRF-TOKEN': token,
                         'X-Requested-With': 'XMLHttpRequest',
                     },
-                    body: JSON.stringify({ word: w }),
+                    body: JSON.stringify({
+                        word: w,
+                        deck_id: duplicateDeckId ? Number(duplicateDeckId) : null,
+                    }),
                 });
                 let data = {};
                 try {

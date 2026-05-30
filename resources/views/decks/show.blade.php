@@ -88,9 +88,9 @@
                     <p class="text-slate-500">لا توجد نتائج مطابقة.</p>
                 </div>
             @else
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="deck-cards-grid mx-auto grid max-w-5xl gap-5 sm:grid-cols-2 sm:gap-6">
                 @foreach ($cards as $card)
-                    <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <article class="deck-card-item rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
                         <div class="mb-3 flex items-center justify-between">
                             <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">بطاقة</span>
                             <div class="flex items-center gap-1 text-xs">
@@ -103,9 +103,9 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <x-flashcard-front :card="$card" class="aspect-[3/2] rounded-lg" />
-                            <x-flashcard-back :card="$card" class="aspect-[3/2] rounded-lg" />
+                        <div class="deck-card-faces grid grid-cols-2 gap-2 sm:gap-3">
+                            <x-flashcard-front :card="$card" class="deck-card-face aspect-[3/2] rounded-lg" />
+                            <x-flashcard-back :card="$card" class="deck-card-face aspect-[3/2] rounded-lg" />
                         </div>
 
                         <div class="mt-3 text-center">

@@ -16,6 +16,7 @@ class CardController extends Controller
 {
     public function createForDeck(Deck $deck): View
     {
+        $deck->load('level.language');
         $category = $this->defaultCategory($deck);
 
         return view('cards.create', compact('category', 'deck'));
@@ -37,6 +38,8 @@ class CardController extends Controller
     public function create(Category $category): View
     {
         $deck = $category->deck;
+        $deck->load('level.language');
+
         return view('cards.create', compact('category', 'deck'));
     }
 
@@ -54,7 +57,7 @@ class CardController extends Controller
 
     public function edit(Card $card): View
     {
-        $card->load('category.deck');
+        $card->load('category.deck.level.language');
         $category = $card->category;
         $deck = $category->deck;
 

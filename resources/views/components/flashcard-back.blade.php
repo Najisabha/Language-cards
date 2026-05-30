@@ -38,7 +38,7 @@
         @endif
 
         @if ($card->show_en && $card->en_meaning)
-            <p class="flashcard-back-en" dir="ltr" @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->en_meaning }}</p>
+            <p class="flashcard-back-pron" @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->en_meaning }}</p>
         @endif
 
         @if ($card->show_explanation && $card->explanation)

@@ -40,7 +40,7 @@
     @if ($useImageOverlay)
         <div class="absolute inset-0 bg-slate-900/15"></div>
     @endif
-    <span class="relative z-10 font-extrabold text-slate-900 drop-shadow-sm{{ $textStyle === '' ? ' text-2xl md:text-3xl' : '' }}"
+    <span class="flashcard-front-word relative z-10 font-extrabold text-slate-900 drop-shadow-sm{{ $textStyle === '' ? ' text-2xl md:text-3xl' : '' }}"
           dir="ltr"
           @if ($textStyle !== '') style="{{ $textStyle }}" @endif>
         {{ $card->word }}

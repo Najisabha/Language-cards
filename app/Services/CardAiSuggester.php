@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 class CardAiSuggester
 {
     /** @var array<string, mixed> */
-    public function suggest(string $word): array
+    public function suggest(string $word, ?string $targetLanguageName = null): array
     {
         $word = trim($word);
 
@@ -19,22 +19,22 @@ class CardAiSuggester
             throw new \RuntimeException('AI is not configured');
         }
 
-        $system = <<<'TXT'
-You help build bilingual (English/Arabic) vocabulary flashcards. The user enters a term that may be in English or Arabic.
+        $languageLabel = $targetLanguageName
+            ? trim($targetLanguageName)
+            : 'the target language on the flashcard';
+
+        $system = <<<TXT
+You help build Arabic-first vocabulary flashcards. The front of each card shows a word in {$languageLabel}.
 Respond with JSON only. Required keys: en_meaning, ar_meaning, explanation, icon.
 Never return empty en_meaning or empty ar_meaning.
-If the term is English:
-- en_meaning: short English gloss/definition
-- ar_meaning: Arabic translation or concise Arabic gloss
-If the term is Arabic:
-- en_meaning: English translation or concise English gloss
-- ar_meaning: short Arabic gloss (can reuse the original Arabic term when already clear)
-Keep meanings plain text, learner-friendly, and brief.
+- en_meaning: write how to pronounce the front word using Arabic letters only (transliteration in Arabic script for learners). No Latin letters. Keep it short and natural (e.g. ويلكم for English "welcome").
+- ar_meaning: Arabic translation or a concise Arabic gloss of the word
+Keep text plain, learner-friendly, and brief.
 For explanation, return one short Arabic example sentence (or a brief Arabic explanation) suitable for learners.
 For icon return exactly one suitable emoji character only.
 TXT;
 
-        $user = 'Term: '.$word;
+        $user = 'Term on card front: '.$word;
 
         $payload = [
             'model' => $model,
@@ -73,12 +73,8 @@ TXT;
         if ($en === '' && $ar === '') {
             if ($this->containsArabic($word)) {
                 $ar = $word;
-            } else {
-                $en = $word;
             }
-        } elseif ($en === '') {
-            $en = $word;
-        } elseif ($ar === '') {
+        } elseif ($ar === '' && $this->containsArabic($word)) {
             $ar = $word;
         }
 

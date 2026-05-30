@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Deck;
 use App\Services\CardAiSuggester;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class CardAiSuggestController extends Controller
     {
         $validated = $request->validate([
             'word' => ['required', 'string', 'max:120'],
+            'deck_id' => ['nullable', 'integer', 'exists:decks,id'],
         ]);
 
         if (! config('services.ai.api_key')) {
@@ -22,7 +24,13 @@ class CardAiSuggestController extends Controller
         }
 
         try {
-            $result = $suggester->suggest($validated['word']);
+            $languageName = null;
+            if (! empty($validated['deck_id'])) {
+                $deck = Deck::query()->with('level.language')->find($validated['deck_id']);
+                $languageName = $deck?->level?->language?->name;
+            }
+
+            $result = $suggester->suggest($validated['word'], $languageName);
 
             return response()->json($result);
         } catch (\Throwable $e) {
