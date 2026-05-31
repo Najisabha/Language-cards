@@ -8,7 +8,7 @@ use App\Models\Level;
 use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class DeckController extends Controller
@@ -125,71 +125,45 @@ class DeckController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $deck = Deck::create($this->validateDeck($request));
+        $data = $this->validateDeck($request);
+        [$includeWords, $includeSentences] = $this->resolveCategoryChoices($request);
 
-        return redirect()->route('decks.show', $deck)->with('status', 'تم إنشاء المجموعة بنجاح.');
+        $deck = Deck::create($data);
+        $deck->syncWordSentenceCategories($includeWords, $includeSentences);
+
+        return redirect()->route('decks.show', $deck)->with('status', 'تم إنشاء النوع بنجاح.');
     }
 
-    public function show(Request $request, Deck $deck): View
+    public function show(Deck $deck): View
     {
         $deck->load([
             'level.language',
-            'categories' => fn ($q) => $q->with(['cards' => fn ($c) => $c->orderBy('position')])->withCount('cards'),
+            'categories' => fn ($q) => $q->withCount('cards')->orderBy('position'),
         ]);
 
-        $allCards = $deck->categories->flatMap->cards->values();
-        $q = trim((string) $request->query('q', ''));
-        $cards = $allCards;
+        $stats = [
+            'cards' => $deck->cards()->count(),
+        ];
 
-        if ($q !== '') {
-            $tokens = preg_split('/\s+/u', mb_strtolower($q, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-            $cards = $allCards
-                ->filter(function ($card) use ($tokens) {
-                    $haystack = mb_strtolower(
-                        trim(implode(' ', [
-                            (string) $card->word,
-                            (string) $card->en_meaning,
-                            (string) $card->ar_meaning,
-                            (string) $card->explanation,
-                        ])),
-                        'UTF-8'
-                    );
-
-                    foreach ($tokens as $token) {
-                        if ($token === '') {
-                            continue;
-                        }
-                        if (! str_contains($haystack, $token)) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                })
-                ->values();
-        }
-
-        return view('decks.show', [
-            'deck' => $deck,
-            'cards' => $cards,
-            'q' => $q,
-            'totalCardsCount' => $allCards->count(),
-        ]);
+        return view('decks.show', compact('deck', 'stats'));
     }
 
     public function edit(Deck $deck): View
     {
-        $deck->load('level.language');
+        $deck->load(['level.language', 'categories']);
 
         return view('decks.edit', compact('deck'));
     }
 
     public function update(Request $request, Deck $deck): RedirectResponse
     {
-        $deck->update($this->validateDeck($request));
+        $data = $this->validateDeck($request);
+        [$includeWords, $includeSentences] = $this->resolveCategoryChoices($request);
 
-        return redirect()->route('decks.show', $deck)->with('status', 'تم تحديث المجموعة.');
+        $deck->update($data);
+        $deck->syncWordSentenceCategories($includeWords, $includeSentences);
+
+        return redirect()->route('decks.show', $deck)->with('status', 'تم تحديث النوع.');
     }
 
     public function destroy(Deck $deck): RedirectResponse
@@ -198,10 +172,10 @@ class DeckController extends Controller
         $deck->delete();
 
         if ($level) {
-            return redirect()->route('levels.show', $level)->with('status', 'تم حذف المجموعة.');
+            return redirect()->route('levels.show', $level)->with('status', 'تم حذف النوع.');
         }
 
-        return redirect()->route('languages.index')->with('status', 'تم حذف المجموعة.');
+        return redirect()->route('languages.index')->with('status', 'تم حذف النوع.');
     }
 
     public function printOptions(Deck $deck): View
@@ -275,5 +249,20 @@ class DeckController extends Controller
             'description' => ['nullable', 'string', 'max:500'],
             'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ]);
+    }
+
+    /** @return array{0: bool, 1: bool} */
+    private function resolveCategoryChoices(Request $request): array
+    {
+        $includeWords = $request->boolean('include_words');
+        $includeSentences = $request->boolean('include_sentences');
+
+        if (! $includeWords && ! $includeSentences) {
+            throw ValidationException::withMessages([
+                'include_words' => 'اختر «كلمات» أو «جمل» أو كليهما.',
+            ]);
+        }
+
+        return [$includeWords, $includeSentences];
     }
 }

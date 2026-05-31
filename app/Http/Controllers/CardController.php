@@ -14,25 +14,20 @@ use Illuminate\View\View;
 
 class CardController extends Controller
 {
-    public function createForDeck(Deck $deck): View
+    public function createForDeck(Deck $deck): RedirectResponse
     {
-        $deck->load('level.language');
-        $category = $this->defaultCategory($deck);
+        $deck->ensureDefaultCategories();
 
-        return view('cards.create', compact('category', 'deck'));
+        return redirect()
+            ->route('decks.show', $deck)
+            ->with('status', 'اختر «الكلمات» أو «الجمل» ثم أضف البطاقة.');
     }
 
     public function storeForDeck(Request $request, Deck $deck): RedirectResponse
     {
-        $category = $this->defaultCategory($deck);
-        $data = $this->validateCard($request, null, $deck);
-        $data['deck_id'] = $deck->id;
-        $data['category_id'] = $category->id;
-        $data['position'] = (int) ($deck->cards()->max('cards.position') ?? 0) + 1;
-
-        $category->cards()->create($data);
-
-        return redirect()->route('decks.show', $deck)->with('status', 'تمت إضافة البطاقة.');
+        return redirect()
+            ->route('decks.show', $deck)
+            ->with('status', 'اختر «الكلمات» أو «الجمل» ثم أضف البطاقة.');
     }
 
     public function create(Category $category): View
@@ -52,7 +47,7 @@ class CardController extends Controller
 
         $category->cards()->create($data);
 
-        return redirect()->route('decks.show', $category->deck_id)->with('status', 'تمت إضافة البطاقة.');
+        return redirect()->route('categories.show', $category)->with('status', 'تمت إضافة البطاقة.');
     }
 
     public function edit(Card $card): View
@@ -72,18 +67,18 @@ class CardController extends Controller
 
         $card->update($data);
 
-        return redirect()->route('decks.show', $card->deck_id)->with('status', 'تم تحديث البطاقة.');
+        return redirect()->route('categories.show', $card->category_id)->with('status', 'تم تحديث البطاقة.');
     }
 
     public function destroy(Card $card): RedirectResponse
     {
-        $deckId = $card->deck_id;
+        $categoryId = $card->category_id;
 
         $this->deleteStoredIconImage($card->icon_image_path);
 
         $card->delete();
 
-        return redirect()->route('decks.show', $deckId)->with('status', 'تم حذف البطاقة.');
+        return redirect()->route('categories.show', $categoryId)->with('status', 'تم حذف البطاقة.');
     }
 
     public function checkWordDuplicate(Request $request): JsonResponse

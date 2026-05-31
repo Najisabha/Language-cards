@@ -1,10 +1,10 @@
 ﻿@extends('layouts.app')
 
-@section('title', 'تعديل مجموعة')
+@section('title', 'تعديل النوع')
 
 @section('content')
     <div class="max-w-xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6">تعديل المجموعة</h1>
+        <h1 class="text-2xl font-bold mb-6">تعديل النوع</h1>
 
         <form method="POST" action="{{ route('decks.update', $deck) }}" class="bg-white rounded-xl border border-slate-200 p-6">
             @csrf
@@ -17,10 +17,10 @@
             </div>
         </form>
 
-        <form method="POST" action="{{ route('decks.destroy', $deck) }}" class="mt-4 text-end" onsubmit="return confirm('هل أنت متأكد من حذف هذه المجموعة وكل تصنيفاتها وبطاقاتها؟');">
+        <form method="POST" action="{{ route('decks.destroy', $deck) }}" class="mt-4 text-end" onsubmit="return confirm('هل أنت متأكد من حذف هذا النوع وكل تصنيفاته وبطاقاته؟');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="px-4 py-2 rounded-md text-red-600 hover:bg-red-50 text-sm">حذف المجموعة</button>
+            <button type="submit" class="px-4 py-2 rounded-md text-red-600 hover:bg-red-50 text-sm">حذف النوع</button>
         </form>
     </div>
 @endsection

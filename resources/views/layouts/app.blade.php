@@ -35,7 +35,7 @@
     @endif
 
     <div class="mx-auto max-w-6xl px-4 pt-4 text-xs text-slate-500">
-        عند فتح المستويات ستختار اللغة أولًا، وعند فتح المجموعات ستختار اللغة ثم المستوى.
+        عند التصفح: اللغة ← المستوى ← النوع (تحيات، أرقام…) ← كلمات أو جمل ← البطاقات.
     </div>
 
     <main class="mx-auto max-w-6xl px-4 py-8">@yield('content')</main>

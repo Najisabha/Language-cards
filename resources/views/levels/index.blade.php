@@ -104,26 +104,33 @@
         @else
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($levels as $level)
-                    <a href="{{ route('levels.show', $level) }}" class="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg">
-                        <div class="mb-4 flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">{{ $level->name }}</p>
-                                <h3 class="mt-2 text-xl font-bold text-slate-900 group-hover:text-indigo-600">{{ $level->title ?: 'مستوى دراسي' }}</h3>
+                    <article class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
+                        <a href="{{ route('levels.show', $level) }}"
+                           class="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                           aria-label="فتح المستوى {{ $level->name }}"></a>
+                        <div class="pointer-events-none relative p-5">
+                            <div class="mb-4 flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">{{ $level->name }}</p>
+                                    <h3 class="mt-2 text-xl font-bold text-slate-900">{{ $level->title ?: 'مستوى دراسي' }}</h3>
+                                </div>
+                                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">{{ $level->decks_count }} مجموعة</span>
                             </div>
-                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">{{ $level->decks_count }} مجموعة</span>
-                        </div>
 
-                        <div class="rounded-xl bg-slate-50 p-4">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-slate-500">المجموعات</span>
-                                <strong class="text-slate-800">{{ $level->decks_count }}</strong>
+                            <div class="rounded-xl bg-slate-50 p-4">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-slate-500">المجموعات</span>
+                                    <strong class="text-slate-800">{{ $level->decks_count }}</strong>
+                                </div>
+                                <div class="mt-2 flex items-center justify-between text-sm">
+                                    <span class="text-slate-500">البطاقات</span>
+                                    <strong class="text-slate-800">{{ $level->cards_count }}</strong>
+                                </div>
                             </div>
-                            <div class="mt-2 flex items-center justify-between text-sm">
-                                <span class="text-slate-500">البطاقات</span>
-                                <strong class="text-slate-800">{{ $level->cards_count }}</strong>
-                            </div>
+
+                            <p class="mt-4 text-sm font-semibold text-indigo-600">فتح المستوى ←</p>
                         </div>
-                    </a>
+                    </article>
                 @endforeach
             </div>
         @endif

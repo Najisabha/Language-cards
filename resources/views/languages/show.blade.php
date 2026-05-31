@@ -15,7 +15,7 @@
             <div>
                 <p class="page-eyebrow">Language{{ $language->code ? ' · '.$language->code : '' }}</p>
                 <h1 class="page-title">{{ $language->name }}</h1>
-                <p class="page-subtitle">ابدأ أولًا بإضافة المستويات لهذه اللغة، وبعدها ستتمكن من إضافة المجموعات داخل كل مستوى.</p>
+                <p class="page-subtitle">ابدأ بإضافة المستويات، ثم اختر النوع (تحيات، أرقام…) ثم الكلمات أو الجمل لعرض البطاقات.</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -30,7 +30,7 @@
             <strong class="stat-value">{{ $stats['levels'] }}</strong>
         </div>
         <div class="stat-card">
-            <span class="stat-label">المجموعات</span>
+            <span class="stat-label">الأنواع</span>
             <strong class="stat-value">{{ $stats['decks'] }}</strong>
         </div>
         <div class="stat-card">
@@ -47,26 +47,33 @@
     @else
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($language->levels as $level)
-                <a href="{{ route('levels.show', $level) }}" class="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">{{ $level->name }}</p>
-                            <h3 class="mt-2 text-xl font-bold text-slate-900 group-hover:text-indigo-600">{{ $level->title ?: 'مستوى دراسي' }}</h3>
+                <article class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
+                    <a href="{{ route('levels.show', $level) }}"
+                       class="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                       aria-label="فتح المستوى {{ $level->name }}"></a>
+                    <div class="pointer-events-none relative p-5">
+                        <div class="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">{{ $level->name }}</p>
+                                <h3 class="mt-2 text-xl font-bold text-slate-900">{{ $level->title ?: 'مستوى دراسي' }}</h3>
+                            </div>
+                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">{{ $level->decks_count }} نوع</span>
                         </div>
-                        <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">{{ $level->decks_count }} مجموعة</span>
-                    </div>
 
-                    <div class="rounded-xl bg-slate-50 p-4">
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-slate-500">المجموعات</span>
-                            <strong class="text-slate-800">{{ $level->decks_count }}</strong>
+                        <div class="rounded-xl bg-slate-50 p-4">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-slate-500">الأنواع</span>
+                                <strong class="text-slate-800">{{ $level->decks_count }}</strong>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between text-sm">
+                                <span class="text-slate-500">البطاقات</span>
+                                <strong class="text-slate-800">{{ $level->cards_count }}</strong>
+                            </div>
                         </div>
-                        <div class="mt-2 flex items-center justify-between text-sm">
-                            <span class="text-slate-500">البطاقات</span>
-                            <strong class="text-slate-800">{{ $level->cards_count }}</strong>
-                        </div>
+
+                        <p class="mt-4 text-sm font-semibold text-indigo-600">فتح المستوى ←</p>
                     </div>
-                </a>
+                </article>
             @endforeach
         </div>
     @endif

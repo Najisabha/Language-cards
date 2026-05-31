@@ -37,7 +37,7 @@ Route::post('decks/{deck}/cards', [CardController::class, 'storeForDeck'])->name
 
 Route::resource('decks.categories', CategoryController::class)
     ->shallow()
-    ->except(['index', 'show']);
+    ->except(['index']);
 
 Route::resource('categories.cards', CardController::class)
     ->shallow()

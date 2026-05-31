@@ -21,100 +21,57 @@
         <div class="flex items-start gap-3">
             <span class="inline-flex h-14 w-14 rounded-2xl shrink-0 shadow-inner" style="background-color: {{ $deck->color }}"></span>
             <div>
-                <p class="page-eyebrow">{{ $deck->level?->name ?? 'Deck' }}</p>
+                <p class="page-eyebrow">نوع · {{ $deck->level?->name }}</p>
                 <h1 class="page-title">{{ $deck->name }}</h1>
+                <p class="page-subtitle">اختر «الكلمات» أو «الجمل» لعرض البطاقات وإضافتها.</p>
                 @if ($deck->description)
-                    <p class="page-subtitle max-w-xl">{{ $deck->description }}</p>
+                    <p class="mt-2 text-sm text-slate-500">{{ $deck->description }}</p>
                 @endif
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span class="rounded-full bg-slate-100 px-3 py-1">{{ $cards->count() }} بطاقة</span>
-                </div>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('decks.edit', $deck) }}" class="btn btn-secondary">تعديل</a>
-            <a href="{{ route('decks.cards.reorder.form', $deck) }}" class="btn btn-secondary">ترتيب البطاقات</a>
+            <a href="{{ route('decks.edit', $deck) }}" class="btn btn-secondary">تعديل النوع</a>
             <a href="{{ route('decks.print.options', $deck) }}" class="btn btn-secondary">طباعة</a>
-            <a href="{{ route('decks.cards.create', $deck) }}" class="btn btn-primary">+ بطاقة جديدة</a>
         </div>
     </section>
 
-    @php
-        $allCount = $totalCardsCount ?? $cards->count();
-        $currentQ = $q ?? request('q');
-    @endphp
+    <section class="stats-grid mb-8">
+        <div class="stat-card">
+            <span class="stat-label">إجمالي البطاقات</span>
+            <strong class="stat-value">{{ $stats['cards'] }}</strong>
+        </div>
+    </section>
 
-    @if ($allCount === 0)
-        <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
-            <p class="text-slate-500 mb-4">لا توجد بطاقات داخل هذه المجموعة بعد.</p>
-            <a href="{{ route('decks.cards.create', $deck) }}" class="btn btn-primary">أضف أول بطاقة</a>
+    <h2 class="mb-4 text-lg font-bold text-slate-900">اختر التصنيف</h2>
+
+    @if ($deck->categories->isEmpty())
+        <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p class="text-slate-500">لا توجد تصنيفات لهذا النوع.</p>
         </div>
     @else
-        <section>
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-bold text-slate-900">بطاقات المجموعة</h2>
-                <span class="text-sm text-slate-500">
-                    {{ $cards->count() }} بطاقة
-                    @if(isset($totalCardsCount) && $totalCardsCount !== $cards->count())
-                        <span class="mx-1">·</span>
-                        <span>من أصل {{ $totalCardsCount }}</span>
-                    @endif
-                </span>
-            </div>
-
-            <form method="GET" action="{{ route('decks.show', $deck) }}" class="mb-4">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div class="flex-1">
-                        <label for="card-search" class="sr-only">بحث</label>
-                        <input
-                            id="card-search"
-                            name="q"
-                            value="{{ $currentQ }}"
-                            placeholder="ابحث بالكلمة أو المعنى أو الشرح..."
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/60"
-                        />
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="submit" class="btn btn-secondary">بحث</button>
-                        @if(! empty($currentQ))
-                            <a href="{{ route('decks.show', $deck) }}" class="btn btn-secondary">مسح</a>
-                        @endif
-                    </div>
+    <div class="mx-auto grid max-w-3xl gap-5 sm:grid-cols-2">
+        @foreach ($deck->categories as $category)
+            @php
+                $isWords = $category->name === \App\Models\Deck::CATEGORY_WORDS;
+                $accent = $isWords ? '#6366f1' : '#10b981';
+            @endphp
+            <article class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
+                <a href="{{ route('categories.show', $category) }}"
+                   class="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                   aria-label="فتح {{ $category->name }}"></a>
+                <div class="pointer-events-none relative p-6">
+                    <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-inner"
+                          style="background-color: {{ $accent }}">
+                        {{ $isWords ? 'ك' : 'ج' }}
+                    </span>
+                    <h3 class="mt-4 text-xl font-bold text-slate-900">{{ $category->name }}</h3>
+                    <p class="mt-1 text-sm text-slate-500">
+                        {{ $isWords ? 'بطاقات مفردات وكلمات' : 'بطاقات جمل وعبارات' }}
+                    </p>
+                    <p class="mt-4 text-sm font-semibold text-indigo-600">{{ $category->cards_count }} بطاقة · عرض ←</p>
                 </div>
-            </form>
-
-            @if($cards->isEmpty())
-                <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                    <p class="text-slate-500">لا توجد نتائج مطابقة.</p>
-                </div>
-            @else
-            <div class="deck-cards-grid mx-auto grid max-w-5xl gap-5 sm:grid-cols-2 sm:gap-6">
-                @foreach ($cards as $card)
-                    <article class="deck-card-item rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
-                        <div class="mb-3 flex items-center justify-between">
-                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">بطاقة</span>
-                            <div class="flex items-center gap-1 text-xs">
-                                <a href="{{ route('cards.edit', $card) }}" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">تعديل</a>
-                                <form method="POST" action="{{ route('cards.destroy', $card) }}" onsubmit="return confirm('حذف البطاقة؟');" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="rounded-md px-2 py-1 text-red-600 hover:bg-red-50">حذف</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="deck-card-faces grid grid-cols-2 gap-2 sm:gap-3">
-                            <x-flashcard-front :card="$card" class="deck-card-face aspect-[3/2] rounded-lg" />
-                            <x-flashcard-back :card="$card" class="deck-card-face aspect-[3/2] rounded-lg" />
-                        </div>
-
-                        <div class="mt-3 text-center">
-                            <p class="text-sm font-semibold text-slate-900">{{ $card->word }}</p>
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-            @endif
-        </section>
+            </article>
+        @endforeach
+    </div>
     @endif
 @endsection

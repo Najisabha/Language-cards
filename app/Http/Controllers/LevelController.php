@@ -91,14 +91,15 @@ class LevelController extends Controller
 
     public function show(Level $level): View
     {
+        $level->migrateLegacyWordSentenceDecks();
+
         $level->load([
             'language',
-            'decks' => fn ($q) => $q->withCount(['categories', 'cards'])->latest(),
+            'decks' => fn ($q) => $q->topics()->withCount(['categories', 'cards'])->orderBy('id'),
         ]);
 
         $stats = [
             'decks' => $level->decks->count(),
-            'categories' => $level->decks->sum('categories_count'),
             'cards' => $level->decks->sum('cards_count'),
         ];
 
