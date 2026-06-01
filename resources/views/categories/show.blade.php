@@ -27,7 +27,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <a href="{{ route('decks.show', $deck) }}" class="btn btn-secondary">رجوع للنوع</a>
-            <a href="{{ route('categories.cards.create', $category) }}" class="btn btn-primary">+ بطاقة جديدة</a>
+            @admin
+                <a href="{{ route('categories.cards.create', $category) }}" class="btn btn-primary">+ بطاقة جديدة</a>
+            @endadmin
         </div>
     </section>
 
@@ -39,7 +41,9 @@
     @if ($allCount === 0)
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد بطاقات في «{{ $category->name }}» بعد.</p>
-            <a href="{{ route('categories.cards.create', $category) }}" class="btn btn-primary">أضف أول بطاقة</a>
+            @admin
+                <a href="{{ route('categories.cards.create', $category) }}" class="btn btn-primary">أضف أول بطاقة</a>
+            @endadmin
         </div>
     @else
         <section>
@@ -85,14 +89,16 @@
                     <article class="deck-card-item rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
                         <div class="mb-3 flex items-center justify-between">
                             <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">بطاقة</span>
-                            <div class="flex items-center gap-1 text-xs">
-                                <a href="{{ route('cards.edit', $card) }}" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">تعديل</a>
-                                <form method="POST" action="{{ route('cards.destroy', $card) }}" onsubmit="return confirm('حذف البطاقة؟');" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="rounded-md px-2 py-1 text-red-600 hover:bg-red-50">حذف</button>
-                                </form>
-                            </div>
+                            @admin
+                                <div class="flex items-center gap-1 text-xs">
+                                    <a href="{{ route('cards.edit', $card) }}" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">تعديل</a>
+                                    <form method="POST" action="{{ route('cards.destroy', $card) }}" onsubmit="return confirm('حذف البطاقة؟');" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-md px-2 py-1 text-red-600 hover:bg-red-50">حذف</button>
+                                    </form>
+                                </div>
+                            @endadmin
                         </div>
 
                         <div class="deck-card-faces grid grid-cols-2 gap-2 sm:gap-3">

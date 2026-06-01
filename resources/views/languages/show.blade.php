@@ -18,10 +18,12 @@
                 <p class="page-subtitle">ابدأ بإضافة المستويات، ثم اختر النوع (تحيات، أرقام…) ثم الكلمات أو الجمل لعرض البطاقات.</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('languages.edit', $language) }}" class="btn btn-secondary">تعديل</a>
-            <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
-        </div>
+        @admin
+            <div class="flex items-center gap-2">
+                <a href="{{ route('languages.edit', $language) }}" class="btn btn-secondary">تعديل</a>
+                <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
+            </div>
+        @endadmin
     </section>
 
     <section class="stats-grid mb-8">
@@ -42,7 +44,9 @@
     @if ($language->levels->isEmpty())
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد مستويات في هذه اللغة بعد.</p>
-            <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">أضف أول مستوى</a>
+            @admin
+                <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">أضف أول مستوى</a>
+            @endadmin
         </div>
     @else
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

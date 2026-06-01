@@ -30,7 +30,9 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('decks.edit', $deck) }}" class="btn btn-secondary">تعديل النوع</a>
+            @admin
+                <a href="{{ route('decks.edit', $deck) }}" class="btn btn-secondary">تعديل النوع</a>
+            @endadmin
             <a href="{{ route('decks.print.options', $deck) }}" class="btn btn-secondary">طباعة</a>
         </div>
     </section>

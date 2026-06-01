@@ -9,7 +9,9 @@
             <h1 class="page-title">اللغات</h1>
             <p class="page-subtitle">ابدأ بإنشاء لغة، ثم أضف مستوياتها ومجموعاتها وبطاقاتها.</p>
         </div>
-        <a href="{{ route('languages.create') }}" class="btn btn-primary">+ لغة جديدة</a>
+        @admin
+            <a href="{{ route('languages.create') }}" class="btn btn-primary">+ لغة جديدة</a>
+        @endadmin
     </section>
 
     <section class="stats-grid mb-8">
@@ -30,7 +32,9 @@
     @if ($languages->isEmpty())
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد لغات بعد.</p>
-            <a href="{{ route('languages.create') }}" class="btn btn-primary">أضف أول لغة</a>
+            @admin
+                <a href="{{ route('languages.create') }}" class="btn btn-primary">أضف أول لغة</a>
+            @endadmin
         </div>
     @else
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -23,7 +23,15 @@
                    class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('levels.*') ? 'bg-slate-100 font-semibold' : '' }}">المستويات</a>
                 <a href="{{ route('decks.index') }}"
                    class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('decks.*') ? 'bg-slate-100 font-semibold' : '' }}">المجموعات</a>
-                <a href="{{ route('languages.create') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-sm">+ لغة جديدة</a>
+                @admin
+                    <a href="{{ route('languages.create') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-sm">+ لغة جديدة</a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" class="px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100">خروج</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100">دخول المدير</a>
+                @endadmin
             </nav>
         </div>
     </header>

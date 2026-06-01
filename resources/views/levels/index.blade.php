@@ -32,7 +32,9 @@
         @if ($languages->isEmpty())
             <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
                 <p class="text-slate-500 mb-4">لا توجد لغات بعد. أضف لغة أولًا لتتمكن من عرض المستويات.</p>
-                <a href="{{ route('languages.create') }}" class="btn btn-primary">+ لغة جديدة</a>
+                @admin
+                    <a href="{{ route('languages.create') }}" class="btn btn-primary">+ لغة جديدة</a>
+                @endadmin
             </div>
         @else
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -77,7 +79,9 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <a href="{{ route('levels.index') }}" class="btn btn-secondary">تغيير اللغة</a>
-                <a href="{{ route('levels.create', ['language_id' => $selectedLanguage->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
+                @admin
+                    <a href="{{ route('levels.create', ['language_id' => $selectedLanguage->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
+                @endadmin
             </div>
         </section>
 
@@ -99,7 +103,9 @@
         @if ($levels->isEmpty())
             <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
                 <p class="text-slate-500 mb-4">لا توجد مستويات في هذه اللغة بعد.</p>
-                <a href="{{ route('levels.create', ['language_id' => $selectedLanguage->id]) }}" class="btn btn-primary">أضف أول مستوى</a>
+                @admin
+                    <a href="{{ route('levels.create', ['language_id' => $selectedLanguage->id]) }}" class="btn btn-primary">أضف أول مستوى</a>
+                @endadmin
             </div>
         @else
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

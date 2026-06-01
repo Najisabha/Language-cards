@@ -26,8 +26,10 @@
             @if (! $level->decks->isEmpty())
                 <a href="{{ route('levels.print.options', $level) }}" class="btn btn-secondary">طباعة</a>
             @endif
-            <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
-            <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ نوع جديد</a>
+            @admin
+                <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
+                <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ نوع جديد</a>
+            @endadmin
         </div>
     </section>
 
@@ -45,7 +47,9 @@
     @if ($level->decks->isEmpty())
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد أنواع في هذا المستوى بعد.</p>
-            <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">أضف أول نوع</a>
+            @admin
+                <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">أضف أول نوع</a>
+            @endadmin
         </div>
     @else
         <h2 class="mb-4 text-lg font-bold text-slate-900">اختر النوع</h2>
