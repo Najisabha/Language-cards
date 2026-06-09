@@ -17,19 +17,35 @@ Route::post('login', [AdminAuthController::class, 'store'])->name('login.store')
 Route::post('logout', [AdminAuthController::class, 'destroy'])->name('logout')->middleware('admin');
 
 Route::get('languages', [LanguageController::class, 'index'])->name('languages.index');
-Route::get('languages/{language}', [LanguageController::class, 'show'])->name('languages.show');
+Route::get('languages/{language}', [LanguageController::class, 'show'])
+    ->whereNumber('language')
+    ->name('languages.show');
 
 Route::get('levels', [LevelController::class, 'index'])->name('levels.index');
-Route::get('levels/{level}', [LevelController::class, 'show'])->name('levels.show');
-Route::get('levels/{level}/print/options', [LevelController::class, 'printOptions'])->name('levels.print.options');
-Route::get('levels/{level}/print', [LevelController::class, 'print'])->name('levels.print');
+Route::get('levels/{level}', [LevelController::class, 'show'])
+    ->whereNumber('level')
+    ->name('levels.show');
+Route::get('levels/{level}/print/options', [LevelController::class, 'printOptions'])
+    ->whereNumber('level')
+    ->name('levels.print.options');
+Route::get('levels/{level}/print', [LevelController::class, 'print'])
+    ->whereNumber('level')
+    ->name('levels.print');
 
 Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
-Route::get('decks/{deck}', [DeckController::class, 'show'])->name('decks.show');
-Route::get('decks/{deck}/print/options', [DeckController::class, 'printOptions'])->name('decks.print.options');
-Route::get('decks/{deck}/print', [DeckController::class, 'print'])->name('decks.print');
+Route::get('decks/{deck}', [DeckController::class, 'show'])
+    ->whereNumber('deck')
+    ->name('decks.show');
+Route::get('decks/{deck}/print/options', [DeckController::class, 'printOptions'])
+    ->whereNumber('deck')
+    ->name('decks.print.options');
+Route::get('decks/{deck}/print', [DeckController::class, 'print'])
+    ->whereNumber('deck')
+    ->name('decks.print');
 
-Route::get('categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('categories/{category}', [CategoryController::class, 'show'])
+    ->whereNumber('category')
+    ->name('categories.show');
 
 Route::middleware('admin')->group(function (): void {
     Route::post('cards/ai-suggest', CardAiSuggestController::class)
