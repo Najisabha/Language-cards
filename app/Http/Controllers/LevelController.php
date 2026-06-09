@@ -8,6 +8,7 @@ use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class LevelController extends Controller
@@ -182,7 +183,7 @@ class LevelController extends Controller
 
     public function update(Request $request, Level $level): RedirectResponse
     {
-        $level->update($this->validateLevel($request));
+        $level->update($this->validateLevel($request, $level->id));
 
         return redirect()->route('levels.show', $level)->with('status', 'تم تحديث المستوى.');
     }
@@ -199,13 +200,24 @@ class LevelController extends Controller
         return redirect()->route('languages.index')->with('status', 'تم حذف المستوى.');
     }
 
-    private function validateLevel(Request $request): array
+    private function validateLevel(Request $request, ?int $ignoreLevelId = null): array
     {
+        $languageId = $request->input('language_id');
+
+        $nameRule = Rule::unique('levels', 'name')
+            ->where(fn ($query) => $query->where('language_id', $languageId));
+
+        if ($ignoreLevelId !== null) {
+            $nameRule->ignore($ignoreLevelId);
+        }
+
         return $request->validate([
             'language_id' => ['required', 'exists:languages,id'],
-            'name' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:50', $nameRule],
             'title' => ['nullable', 'string', 'max:120'],
             'position' => ['nullable', 'integer', 'min:0', 'max:9999'],
+        ], [
+            'name.unique' => 'رمز المستوى مستخدم مسبقاً في هذه اللغة.',
         ]);
     }
 }
