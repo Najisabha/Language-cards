@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Language;
 use App\Models\Level;
+use App\Support\LevelExcelExchange;
 use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LevelController extends Controller
 {
@@ -172,6 +174,60 @@ class LevelController extends Controller
             'selectedDeckIds' => $selectedDeckIds,
             'levelPrintSubset' => $explicitSubset,
         ]);
+    }
+
+    public function export(Level $level, LevelExcelExchange $excel): StreamedResponse
+    {
+        $level->migrateLegacyWordSentenceDecks();
+
+        return $excel->download($level);
+    }
+
+    public function importForm(Level $level): View
+    {
+        $level->load('language');
+
+        return view('levels.import', compact('level'));
+    }
+
+    public function importTemplate(Level $level, LevelExcelExchange $excel): StreamedResponse
+    {
+        return $excel->downloadTemplate($level);
+    }
+
+    public function import(Request $request, Level $level, LevelExcelExchange $excel): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
+        ], [
+            'file.required' => 'اختر ملف Excel للاستيراد.',
+            'file.mimes' => 'يجب أن يكون الملف بصيغة Excel (.xlsx أو .xls).',
+            'file.max' => 'حجم الملف يجب ألا يتجاوز 10 ميجابايت.',
+        ]);
+
+        $level->migrateLegacyWordSentenceDecks();
+
+        $result = $excel->import($level, $request->file('file'));
+
+        $message = sprintf(
+            'تم الاستيراد: %d جديدة، %d محدّثة، %d متخطاة.',
+            $result['created'],
+            $result['updated'],
+            $result['skipped']
+        );
+
+        if ($result['errors'] !== []) {
+            $preview = implode(' ', array_slice($result['errors'], 0, 5));
+            $extra = count($result['errors']) > 5
+                ? ' … (+'.(count($result['errors']) - 5).')'
+                : '';
+
+            return redirect()
+                ->route('levels.show', $level)
+                ->with('status', $message.' ملاحظات: '.$preview.$extra);
+        }
+
+        return redirect()->route('levels.show', $level)->with('status', $message);
     }
 
     public function edit(Level $level): View

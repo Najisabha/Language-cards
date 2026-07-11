@@ -62,6 +62,18 @@ Route::middleware('admin')->group(function (): void {
 
     Route::resource('languages', LanguageController::class)->except(['index', 'show']);
     Route::resource('levels', LevelController::class)->except(['index', 'show']);
+    Route::get('levels/{level}/export', [LevelController::class, 'export'])
+        ->whereNumber('level')
+        ->name('levels.export');
+    Route::get('levels/{level}/import', [LevelController::class, 'importForm'])
+        ->whereNumber('level')
+        ->name('levels.import.form');
+    Route::get('levels/{level}/import/template', [LevelController::class, 'importTemplate'])
+        ->whereNumber('level')
+        ->name('levels.import.template');
+    Route::post('levels/{level}/import', [LevelController::class, 'import'])
+        ->whereNumber('level')
+        ->name('levels.import');
     Route::resource('decks', DeckController::class)->except(['index', 'show']);
 
     Route::get('decks/{deck}/cards/reorder', [DeckController::class, 'reorderCardsForm'])->name('decks.cards.reorder.form');

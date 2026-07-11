@@ -27,6 +27,8 @@
                 <a href="{{ route('levels.print.options', $level) }}" class="btn btn-secondary">طباعة</a>
             @endif
             @admin
+                <a href="{{ route('levels.export', $level) }}" class="btn btn-secondary">تصدير بيانات</a>
+                <a href="{{ route('levels.import.form', $level) }}" class="btn btn-secondary">استيراد بيانات</a>
                 <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
                 <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ نوع جديد</a>
             @endadmin
