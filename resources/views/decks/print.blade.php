@@ -6,7 +6,9 @@
         $printScope = $printScope ?? 'deck';
     @endphp
     <title>
-        @if ($printScope === 'level')
+        @if ($printScope === 'language')
+            طباعة - {{ $language->name }}
+        @elseif ($printScope === 'level')
             طباعة - {{ $level->name }}
         @else
             طباعة - {{ $deck->name }}
@@ -48,6 +50,7 @@
         $printScope = $printScope ?? 'deck';
         $selectedDeckIds = $selectedDeckIds ?? [];
         $levelPrintSubset = $levelPrintSubset ?? false;
+        $usesDeckSelection = in_array($printScope, ['level', 'language'], true);
         $isCustom = ($printSettings['mode'] ?? 'default') === 'custom';
         $cards = isset($preloadedPrintCards)
             ? collect($preloadedPrintCards)->values()
@@ -56,20 +59,39 @@
         $cols = $printSettings['cols'];
         $rows = $printSettings['rows'];
         $pages = $cards->chunk($perPage);
-        $printFormAction = $printScope === 'level'
-            ? route('levels.print', $level)
-            : route('decks.print', $deck);
-        $printOptionsUrl = $printScope === 'level'
-            ? route('levels.print.options', $level)
-            : route('decks.print.options', $deck);
-        $printBackUrl = $printScope === 'level'
-            ? route('levels.show', $level)
-            : route('decks.show', $deck);
+        $printFormAction = match ($printScope) {
+            'language' => route('languages.print', $language),
+            'level' => route('levels.print', $level),
+            default => route('decks.print', $deck),
+        };
+        $printOptionsUrl = match ($printScope) {
+            'language' => route('languages.print.options', $language),
+            'level' => route('levels.print.options', $level),
+            default => route('decks.print.options', $deck),
+        };
+        $printBackUrl = match ($printScope) {
+            'language' => route('languages.show', $language),
+            'level' => route('levels.show', $level),
+            default => route('decks.show', $deck),
+        };
     @endphp
 
     <div class="print-toolbar no-print mx-auto max-w-5xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-            @if ($printScope === 'level')
+            @if ($printScope === 'language')
+                <h1 class="text-lg font-bold">طباعة اللغة "{{ $language->name }}"</h1>
+                <p class="text-xs text-slate-500">
+                    {{ count($selectedDeckIds) }} مجموعة
+                    &middot; {{ $cards->count() }} بطاقة
+                    &middot; الورقة: {{ $printSettings['paper_size'] }}
+                    &middot; {{ $perPage }} بطاقة/صفحة ({{ $cols }} × {{ $rows }})
+                    &middot; {{ number_format($printSettings['page_width_mm'], 0) }}×{{ number_format($printSettings['page_height_mm'], 0) }}مم
+                    &middot; حجم البطاقة: {{ number_format($printSettings['card_width_mm'], 2) }}×{{ number_format($printSettings['card_height_mm'], 2) }}مم (عرض × طول)
+                    @if ($isCustom)
+                        &middot; <span class="text-violet-700 font-semibold">وضع التخصيص</span>
+                    @endif
+                </p>
+            @elseif ($printScope === 'level')
                 <h1 class="text-lg font-bold">طباعة المستوى "{{ $level->name }}"</h1>
                 <p class="text-xs text-slate-500">
                     اللغة: {{ $level->language?->name ?? '-' }}
@@ -103,7 +125,7 @@
         <div class="flex flex-wrap items-center gap-2">
             @if (! $isCustom)
                 <form action="{{ $printFormAction }}" method="GET" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm">
-                    @if ($printScope === 'level')
+                    @if ($usesDeckSelection)
                         @foreach ($selectedDeckIds as $did)
                             <input type="hidden" name="deck_ids[]" value="{{ $did }}">
                         @endforeach
@@ -135,7 +157,7 @@
             <form id="custom-print-form" action="{{ $printFormAction }}" method="GET"
                   class="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
                 <input type="hidden" name="mode" value="custom">
-                @if ($printScope === 'level')
+                @if ($usesDeckSelection)
                     @foreach ($selectedDeckIds as $did)
                         <input type="hidden" name="deck_ids[]" value="{{ $did }}">
                     @endforeach
@@ -382,7 +404,11 @@
     @if ($isCustom)
         <script>
             (function () {
-                const STORAGE_KEY = '{{ $printScope === "level" ? "levelPrintCustom:{$level->id}" : "deckPrintCustom:{$deck->id}" }}';
+                const STORAGE_KEY = @json(match ($printScope) {
+                    'language' => "languagePrintCustom:{$language->id}",
+                    'level' => "levelPrintCustom:{$level->id}",
+                    default => "deckPrintCustom:{$deck->id}",
+                });
                 const form = document.getElementById('custom-print-form');
                 if (! form) {
                     return;

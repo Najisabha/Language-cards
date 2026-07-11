@@ -20,6 +20,12 @@ Route::get('languages', [LanguageController::class, 'index'])->name('languages.i
 Route::get('languages/{language}', [LanguageController::class, 'show'])
     ->whereNumber('language')
     ->name('languages.show');
+Route::get('languages/{language}/print/options', [LanguageController::class, 'printOptions'])
+    ->whereNumber('language')
+    ->name('languages.print.options');
+Route::get('languages/{language}/print', [LanguageController::class, 'print'])
+    ->whereNumber('language')
+    ->name('languages.print');
 
 Route::get('levels', [LevelController::class, 'index'])->name('levels.index');
 Route::get('levels/{level}', [LevelController::class, 'show'])
@@ -61,6 +67,18 @@ Route::middleware('admin')->group(function (): void {
         ->name('cards.check-duplicate-word');
 
     Route::resource('languages', LanguageController::class)->except(['index', 'show']);
+    Route::get('languages/{language}/export', [LanguageController::class, 'export'])
+        ->whereNumber('language')
+        ->name('languages.export');
+    Route::get('languages/{language}/import', [LanguageController::class, 'importForm'])
+        ->whereNumber('language')
+        ->name('languages.import.form');
+    Route::get('languages/{language}/import/template', [LanguageController::class, 'importTemplate'])
+        ->whereNumber('language')
+        ->name('languages.import.template');
+    Route::post('languages/{language}/import', [LanguageController::class, 'import'])
+        ->whereNumber('language')
+        ->name('languages.import');
     Route::resource('levels', LevelController::class)->except(['index', 'show']);
     Route::get('levels/{level}/export', [LevelController::class, 'export'])
         ->whereNumber('level')

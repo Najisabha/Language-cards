@@ -18,12 +18,17 @@
                 <p class="page-subtitle">ابدأ بإضافة المستويات، ثم اختر النوع (تحيات، أرقام…) ثم الكلمات أو الجمل لعرض البطاقات.</p>
             </div>
         </div>
-        @admin
-            <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($stats['cards'] > 0)
+                <a href="{{ route('languages.print.options', $language) }}" class="btn btn-secondary">طباعة</a>
+            @endif
+            @admin
+                <a href="{{ route('languages.export', $language) }}" class="btn btn-secondary">تصدير بيانات</a>
+                <a href="{{ route('languages.import.form', $language) }}" class="btn btn-secondary">استيراد بيانات</a>
                 <a href="{{ route('languages.edit', $language) }}" class="btn btn-secondary">تعديل</a>
                 <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
-            </div>
-        @endadmin
+            @endadmin
+        </div>
     </section>
 
     <section class="stats-grid mb-8">
