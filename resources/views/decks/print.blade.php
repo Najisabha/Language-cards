@@ -74,6 +74,11 @@
             'level' => route('levels.show', $level),
             default => route('decks.show', $deck),
         };
+        $printStorageKey = match ($printScope) {
+            'language' => 'languagePrintCustom:'.$language->id,
+            'level' => 'levelPrintCustom:'.$level->id,
+            default => 'deckPrintCustom:'.$deck->id,
+        };
     @endphp
 
     <div class="print-toolbar no-print mx-auto max-w-5xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -404,11 +409,7 @@
     @if ($isCustom)
         <script>
             (function () {
-                const STORAGE_KEY = @json(match ($printScope) {
-                    'language' => "languagePrintCustom:{$language->id}",
-                    'level' => "levelPrintCustom:{$level->id}",
-                    default => "deckPrintCustom:{$deck->id}",
-                });
+                const STORAGE_KEY = @json($printStorageKey);
                 const form = document.getElementById('custom-print-form');
                 if (! form) {
                     return;
