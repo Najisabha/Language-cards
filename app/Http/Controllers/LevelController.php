@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Card;
+use App\Models\Deck;
 use App\Models\Language;
 use App\Models\Level;
 use App\Support\LevelExcelExchange;
@@ -101,9 +103,20 @@ class LevelController extends Controller
             'decks' => fn ($q) => $q->topics()->withCount(['categories', 'cards'])->orderBy('id'),
         ]);
 
+        $wordSentenceCounts = Card::query()
+            ->join('categories', 'cards.category_id', '=', 'categories.id')
+            ->join('decks', 'categories.deck_id', '=', 'decks.id')
+            ->where('decks.level_id', $level->id)
+            ->whereIn('categories.name', [Deck::CATEGORY_WORDS, Deck::CATEGORY_SENTENCES])
+            ->selectRaw('categories.name, count(*) as total')
+            ->groupBy('categories.name')
+            ->pluck('total', 'name');
+
         $stats = [
             'decks' => $level->decks->count(),
             'cards' => $level->decks->sum('cards_count'),
+            'words' => (int) $wordSentenceCounts->get(Deck::CATEGORY_WORDS, 0),
+            'sentences' => (int) $wordSentenceCounts->get(Deck::CATEGORY_SENTENCES, 0),
         ];
 
         return view('levels.show', compact('level', 'stats'));

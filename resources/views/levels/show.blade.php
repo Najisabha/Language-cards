@@ -30,12 +30,17 @@
                 <a href="{{ route('levels.export', $level) }}" class="btn btn-secondary">تصدير بيانات</a>
                 <a href="{{ route('levels.import.form', $level) }}" class="btn btn-secondary">استيراد بيانات</a>
                 <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
+                <form method="POST" action="{{ route('levels.destroy', $level) }}" class="inline" onsubmit="return confirm('حذف المستوى؟ سيتم فصل المجموعات عنه فقط.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-secondary text-red-600 hover:border-red-200 hover:bg-red-50">حذف</button>
+                </form>
                 <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ نوع جديد</a>
             @endadmin
         </div>
     </section>
 
-    <section class="stats-grid mb-8">
+    <section class="stats-grid stats-grid--quad mb-8">
         <div class="stat-card">
             <span class="stat-label">الأنواع</span>
             <strong class="stat-value">{{ $stats['decks'] }}</strong>
@@ -43,6 +48,14 @@
         <div class="stat-card">
             <span class="stat-label">البطاقات</span>
             <strong class="stat-value">{{ $stats['cards'] }}</strong>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">الكلمات</span>
+            <strong class="stat-value">{{ $stats['words'] }}</strong>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">الجمل</span>
+            <strong class="stat-value">{{ $stats['sentences'] }}</strong>
         </div>
     </section>
 

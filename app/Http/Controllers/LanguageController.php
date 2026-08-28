@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Card;
+use App\Models\Deck;
 use App\Models\Language;
 use App\Support\LanguageExcelExchange;
 use App\Support\PrintLayout;
@@ -57,10 +59,22 @@ class LanguageController extends Controller
             ])->orderBy('position')->orderBy('name'),
         ]);
 
+        $wordSentenceCounts = Card::query()
+            ->join('categories', 'cards.category_id', '=', 'categories.id')
+            ->join('decks', 'categories.deck_id', '=', 'decks.id')
+            ->join('levels', 'decks.level_id', '=', 'levels.id')
+            ->where('levels.language_id', $language->id)
+            ->whereIn('categories.name', [Deck::CATEGORY_WORDS, Deck::CATEGORY_SENTENCES])
+            ->selectRaw('categories.name, count(*) as total')
+            ->groupBy('categories.name')
+            ->pluck('total', 'name');
+
         $stats = [
             'levels' => $language->levels->count(),
             'decks' => $language->levels->sum('decks_count'),
             'cards' => $language->levels->sum('cards_count'),
+            'words' => (int) $wordSentenceCounts->get(Deck::CATEGORY_WORDS, 0),
+            'sentences' => (int) $wordSentenceCounts->get(Deck::CATEGORY_SENTENCES, 0),
         ];
 
         return view('languages.show', compact('language', 'stats'));
