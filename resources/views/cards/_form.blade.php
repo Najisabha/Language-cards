@@ -80,7 +80,8 @@
                         </div>
                         <div data-ai-icon-url="{{ route('cards.ai-icon-image') }}"
                              data-media-search-url="{{ route('media-images.search') }}"
-                             data-media-folder-search-url="{{ route('media-folders.search') }}">
+                             data-media-folder-search-url="{{ route('media-folders.search') }}"
+                             data-media-upload-base="{{ url('/media-folders') }}">
                             <p class="block text-xs font-medium text-slate-600 mb-2">بحث في مكتبة الصور</p>
 
                             <div class="space-y-2">
@@ -90,16 +91,33 @@
                                            placeholder="ابحث عن اسم المجلد"
                                            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                     <div id="media-folder-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
-                                    <input type="hidden" id="media_folder_id" value="">
+                                    <input type="hidden" id="media_folder_id" name="media_folder_id" value="">
                                 </div>
 
                                 <div>
                                     <label for="media_image_search" class="mb-1 block text-xs text-slate-500">اسم الصورة</label>
-                                    <input type="search" id="media_image_search" autocomplete="off" disabled
-                                           placeholder="اختر مجلداً أولاً ثم ابحث عن الصورة"
-                                           class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                    <div class="flex items-center gap-2">
+                                        <input type="search" id="media_image_search" autocomplete="off" disabled
+                                               placeholder="اختر مجلداً أولاً ثم ابحث عن الصورة"
+                                               class="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                        <div id="icon-upload-actions" class="hidden shrink-0">
+                                            <input type="file" id="icon_image" name="icon_image" accept="image/*" class="sr-only">
+                                            <button type="button" id="icon-upload-btn"
+                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1"
+                                                    style="background-color:#22c55e; --tw-ring-color:#4ade80;"
+                                                    aria-label="إدراج صورة"
+                                                    title="إدراج صورة">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                                                    <path d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                     <p id="media-image-search-hint" class="mt-1 text-[11px] text-amber-600">اختر مجلداً من نتائج البحث أعلاه أولاً.</p>
                                     <div id="media-image-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
+                                    <p id="ai-icon-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
+                                    @error('icon_image') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                                    @error('media_image_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                                 </div>
                             </div>
 
@@ -110,20 +128,6 @@
                                 <span id="selected-media-label" class="text-xs text-slate-600">{{ $card->mediaImage?->displayName() }}</span>
                                 <button type="button" id="clear-selected-media" class="text-xs text-red-600 hover:underline">إلغاء الاختيار</button>
                             </div>
-
-                            <label for="icon_image" class="block text-xs font-medium text-slate-600 mt-3 mb-1">أو ارفع صورة جديدة</label>
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <input type="file" id="icon_image" name="icon_image" accept="image/*"
-                                       class="flex-1 min-w-[10rem] text-sm text-slate-700 file:ml-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:text-indigo-700 hover:file:bg-indigo-100">
-                                <button type="button" id="ai-icon-btn"
-                                        class="shrink-0 px-3 py-2 rounded-md border border-violet-200 bg-violet-50 text-violet-800 text-sm font-semibold hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                                    صورة من الويب
-                                </button>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-1">اختر المجلد أولاً من نتائج البحث، ثم ابحث عن اسم الصورة داخله. الرفع يحفظ صورة جديدة في المكتبة.</p>
-                            <p id="ai-icon-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
-                            @error('icon_image') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-                            @error('media_image_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
 
                             @if ($iconImageUrl)
                                 <div class="mt-2 flex items-center gap-2">
@@ -225,10 +229,24 @@
     const mediaSearchRoot = qs('[data-media-search-url]');
     const mediaSearchUrl = mediaSearchRoot?.getAttribute('data-media-search-url');
     const mediaFolderSearchUrl = mediaSearchRoot?.getAttribute('data-media-folder-search-url');
+    const mediaUploadBase = (mediaSearchRoot?.getAttribute('data-media-upload-base') || '').replace(/\/$/, '');
+    const iconUploadError = byId('ai-icon-error');
     let mediaSearchTimer = null;
     let mediaFolderSearchTimer = null;
     let mediaSearchSeq = 0;
     let mediaFolderSearchSeq = 0;
+    let iconUploadInFlight = false;
+
+    const setIconUploadError = (msg) => {
+        if (!iconUploadError) return;
+        if (msg) {
+            iconUploadError.textContent = msg;
+            iconUploadError.classList.remove('hidden');
+        } else {
+            iconUploadError.textContent = '';
+            iconUploadError.classList.add('hidden');
+        }
+    };
 
     const isHex = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
     const isGradient = (value) => /^(linear|radial|conic)-gradient\s*\(.+\)$/i.test(value);
@@ -355,19 +373,98 @@
         .forEach((el) => el.addEventListener('input', render));
 
     if (iconImage) {
-        iconImage.addEventListener('change', () => {
+        iconImage.addEventListener('change', async () => {
             const file = iconImage.files && iconImage.files[0];
+            setIconUploadError('');
+
             if (uploadedIconImageUrl) {
                 URL.revokeObjectURL(uploadedIconImageUrl);
                 uploadedIconImageUrl = '';
             }
-            if (file) {
-                uploadedIconImageUrl = URL.createObjectURL(file);
-                clearLibrarySelection();
-                if (removeIconImage) removeIconImage.checked = false;
-                if (showIcon) showIcon.checked = true;
+
+            if (!file) {
+                render();
+                return;
             }
+
+            const folderId = (mediaFolderIdInput?.value || '').trim();
+            if (!folderId || !mediaUploadBase) {
+                setIconUploadError('اختر مجلداً أولاً قبل رفع الصورة.');
+                iconImage.value = '';
+                render();
+                return;
+            }
+
+            if (iconUploadInFlight) return;
+            iconUploadInFlight = true;
+            if (iconUploadBtn) iconUploadBtn.disabled = true;
+
+            const localPreviewUrl = URL.createObjectURL(file);
+            uploadedIconImageUrl = localPreviewUrl;
+            if (mediaImageIdInput) mediaImageIdInput.value = '';
+            selectedLibraryImageUrl = '';
+            updateSelectedMediaPreview(localPreviewUrl, file.name);
+            if (removeIconImage) removeIconImage.checked = false;
+            if (showIcon) showIcon.checked = true;
             render();
+
+            try {
+                const token = document.querySelector('input[name="_token"]')?.value;
+                if (!token) {
+                    throw new Error('تعذر التحقق من الجلسة. حدّث الصفحة.');
+                }
+
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('_token', token);
+
+                const res = await fetch(`${mediaUploadBase}/${encodeURIComponent(folderId)}/images`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: formData,
+                });
+
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    data = {};
+                }
+
+                if (!res.ok) {
+                    const msg = data.message
+                        || (data.errors && data.errors.image && data.errors.image[0])
+                        || 'تعذر رفع الصورة.';
+                    throw new Error(msg);
+                }
+
+                const item = data.data || {};
+                if (!item.id) {
+                    throw new Error('استجابة غير صالحة من الخادم.');
+                }
+
+                selectLibraryImage({
+                    id: item.id,
+                    url: item.url || localPreviewUrl,
+                    display_name: item.display_name || file.name,
+                });
+            } catch (err) {
+                setIconUploadError(err?.message || 'تعذر رفع الصورة.');
+                if (uploadedIconImageUrl) {
+                    URL.revokeObjectURL(uploadedIconImageUrl);
+                    uploadedIconImageUrl = '';
+                }
+                iconImage.value = '';
+                clearLibrarySelection();
+                render();
+            } finally {
+                iconUploadInFlight = false;
+                if (iconUploadBtn) iconUploadBtn.disabled = false;
+            }
         });
     }
 
@@ -403,6 +500,8 @@
     });
 
     const mediaImageSearchHint = byId('media-image-search-hint');
+    const iconUploadActions = byId('icon-upload-actions');
+    const iconUploadBtn = byId('icon-upload-btn');
 
     const setImageSearchEnabled = (enabled) => {
         if (mediaSearchInput) {
@@ -414,19 +513,27 @@
         if (mediaImageSearchHint) {
             mediaImageSearchHint.classList.toggle('hidden', enabled);
         }
+        if (iconUploadActions) {
+            iconUploadActions.classList.toggle('hidden', !enabled);
+        }
         if (!enabled) {
             hideResults(mediaResults);
         }
     };
 
+    iconUploadBtn?.addEventListener('click', () => {
+        iconImage?.click();
+    });
+
     const selectFolder = (folder) => {
         if (mediaFolderIdInput) mediaFolderIdInput.value = String(folder.id || '');
         if (mediaFolderSearchInput) mediaFolderSearchInput.value = folder.name || '';
         hideResults(mediaFolderResults);
+        hideResults(mediaResults);
         setImageSearchEnabled(true);
         if (mediaSearchInput) {
+            mediaSearchInput.value = '';
             mediaSearchInput.focus();
-            runImageSearch();
         }
     };
 
@@ -533,11 +640,16 @@
         }
 
         const q = (mediaSearchInput?.value || '').trim();
+        if (!q) {
+            hideResults(mediaResults);
+            return;
+        }
+
         const seq = ++mediaSearchSeq;
         try {
             const params = new URLSearchParams();
             params.set('folder_id', folderId);
-            if (q) params.set('q', q);
+            params.set('q', q);
             const res = await fetch(`${mediaSearchUrl}?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
@@ -577,7 +689,8 @@
         if ((mediaFolderSearchInput.value || '').trim() && !mediaFolderIdInput?.value) runFolderSearch();
     });
     mediaSearchInput?.addEventListener('focus', () => {
-        if ((mediaFolderIdInput?.value || '').trim()) runImageSearch();
+        const q = (mediaSearchInput.value || '').trim();
+        if (q && (mediaFolderIdInput?.value || '').trim()) runImageSearch();
     });
 
     render();

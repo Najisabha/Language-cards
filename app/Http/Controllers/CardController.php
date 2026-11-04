@@ -113,6 +113,7 @@ class CardController extends Controller
                 'mimetypes:image/jpeg,image/png,image/webp,image/gif,image/svg+xml',
             ],
             'media_image_id' => ['nullable', 'integer', 'exists:media_images,id'],
+            'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
             'remove_icon_image' => ['sometimes', 'boolean'],
             'show_en' => ['sometimes', 'boolean'],
             'show_ar' => ['sometimes', 'boolean'],
@@ -187,7 +188,10 @@ class CardController extends Controller
         $existingPath = $card?->mediaImage?->path ?? $card?->icon_image_path;
 
         if ($request->hasFile('icon_image')) {
-            $media = MediaImage::createFromUpload($request->file('icon_image'));
+            $folderId = $request->filled('media_folder_id')
+                ? (int) $request->input('media_folder_id')
+                : null;
+            $media = MediaImage::createFromUpload($request->file('icon_image'), $folderId);
 
             return [
                 'media_image_id' => $media->id,

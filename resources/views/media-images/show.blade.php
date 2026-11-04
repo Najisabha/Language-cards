@@ -9,18 +9,24 @@
         <span>{{ $folder->name }}</span>
     </div>
 
-    <section class="page-hero mb-8">
-        <div>
+    <section class="page-hero mb-8 items-center">
+        <div class="min-w-0">
             <p class="page-eyebrow">Folder</p>
             <h1 class="page-title">{{ $folder->name }}</h1>
-            <p class="page-subtitle">أدرج أو استورد صوراً داخل هذا المجلد، أو صدّرها/احذفها دفعة واحدة. الحد: {{ $mediaSettings['max_upload_mb'] }}MB للصورة، و{{ $mediaSettings['max_images_per_folder'] }} صورة للمجلد.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex shrink-0 flex-nowrap items-center gap-2">
             <form method="POST" action="{{ route('media-folders.images.store', $folder) }}" enctype="multipart/form-data" class="inline">
                 @csrf
                 <input type="file" id="media-store-input" name="image" accept="image/*"
                        class="sr-only" onchange="if (this.files.length) this.form.submit()">
-                <label for="media-store-input" class="btn btn-primary cursor-pointer">إدراج صورة</label>
+                <label for="media-store-input"
+                       class="btn btn-primary !gap-0 !p-2.5 cursor-pointer"
+                       title="إدراج صورة"
+                       aria-label="إدراج صورة">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z" />
+                    </svg>
+                </label>
             </form>
 
             <form method="POST" action="{{ route('media-folders.images.import', $folder) }}" enctype="multipart/form-data" class="inline" id="media-folder-import-form">
@@ -34,23 +40,65 @@
                        data-max-mb="{{ (int) $mediaSettings['max_upload_mb'] }}"
                        data-max-images="{{ (int) $mediaSettings['max_images_per_folder'] }}"
                        data-current-count="{{ $images->count() }}">
-                <label for="media-import-input" class="btn btn-secondary cursor-pointer" title="اختر مجلداً من جهازك لاستيراد كل الصور داخله">استيراد الصور</label>
+                <label for="media-import-input"
+                       class="btn btn-secondary !gap-0 !p-2.5 cursor-pointer"
+                       title="استيراد الصور — اختر مجلداً من جهازك"
+                       aria-label="استيراد الصور">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M3.5 3A1.5 1.5 0 0 0 2 4.5v11A1.5 1.5 0 0 0 3.5 17h13a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-3.12-3.122A1.5 1.5 0 0 0 13.378 3H3.5Zm6.5 4a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 1 1 1.06-1.06l.72.72V7.75A.75.75 0 0 1 10 7Z" />
+                    </svg>
+                </label>
             </form>
 
             @if ($images->isEmpty())
-                <span class="btn btn-secondary opacity-50 cursor-not-allowed" title="لا توجد صور للتصدير بعد">تصدير الصور</span>
-                <span class="btn btn-secondary opacity-50 cursor-not-allowed text-red-600" title="لا توجد صور للحذف">حذف جميع الصور</span>
+                <span class="btn btn-secondary !gap-0 !p-2.5 opacity-50 cursor-not-allowed"
+                      title="لا توجد صور للتصدير بعد"
+                      aria-label="تصدير الصور">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.69L6.3 8.49a.75.75 0 0 0-1.1 1.02l3.25 3.5a.75.75 0 0 0 1.1 0l3.25-3.5a.75.75 0 1 0-1.1-1.02l-2.95 3.15V2.75Z" />
+                        <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                    </svg>
+                </span>
+                <span class="btn btn-secondary !gap-0 !p-2.5 opacity-50 cursor-not-allowed text-red-600"
+                      title="لا توجد صور للحذف"
+                      aria-label="حذف جميع الصور">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+                    </svg>
+                </span>
             @else
-                <a href="{{ route('media-folders.images.export', $folder) }}" class="btn btn-secondary">تصدير الصور</a>
+                <a href="{{ route('media-folders.images.export', $folder) }}"
+                   class="btn btn-secondary !gap-0 !p-2.5"
+                   title="تصدير الصور"
+                   aria-label="تصدير الصور">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.69L6.3 8.49a.75.75 0 0 0-1.1 1.02l3.25 3.5a.75.75 0 0 0 1.1 0l3.25-3.5a.75.75 0 1 0-1.1-1.02l-2.95 3.15V2.75Z" />
+                        <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                    </svg>
+                </a>
                 <form method="POST" action="{{ route('media-folders.images.destroy-all', $folder) }}" class="inline"
                       onsubmit="return confirm('حذف جميع صور هذا المجلد؟ ستُزال من البطاقات التي تستخدمها.');">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-secondary text-red-600 hover:border-red-200 hover:bg-red-50">حذف جميع الصور</button>
+                    <button type="submit"
+                            class="btn btn-secondary !gap-0 !p-2.5 text-red-600 hover:border-red-200 hover:bg-red-50"
+                            title="حذف جميع الصور"
+                            aria-label="حذف جميع الصور">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
                 </form>
             @endif
 
-            <a href="{{ route('media-images.index') }}" class="btn btn-secondary">رجوع</a>
+            <a href="{{ route('media-images.index') }}"
+               class="btn btn-secondary !gap-0 !p-2.5"
+               title="رجوع"
+               aria-label="رجوع">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+                </svg>
+            </a>
         </div>
     </section>
 

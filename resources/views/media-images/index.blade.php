@@ -7,67 +7,93 @@
         <div>
             <p class="page-eyebrow">Media</p>
             <h1 class="page-title">مكتبة الصور</h1>
-            <p class="page-subtitle">أنشئ مجلدات وضع الصور داخلها، ثم أعد استخدامها في بطاقات بأي لغة.</p>
         </div>
-        <div class="flex flex-col items-stretch gap-2 sm:items-end">
-            <div class="flex flex-wrap items-end gap-2">
-                <form method="POST" action="{{ route('media-folders.store') }}" class="flex flex-wrap items-end gap-2">
-                    @csrf
-                    <div>
-                        <label for="folder-name" class="sr-only">اسم المجلد</label>
-                        <input type="text" id="folder-name" name="name" required maxlength="120"
-                               value="{{ old('name') }}"
-                               placeholder="اسم المجلد الجديد"
-                               class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[12rem]">
-                    </div>
-                    <button type="submit" class="btn btn-primary">إنشاء المجلد</button>
-                </form>
-
-                <button type="button"
-                        id="media-settings-open"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
-                        style="background-color:#64748b;"
-                        title="إعدادات المكتبة"
-                        aria-label="إعدادات المكتبة">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="h-5 w-5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <form method="POST" action="{{ route('media-folders.store') }}" class="flex flex-wrap items-center gap-2">
+                @csrf
+                <div>
+                    <label for="folder-name" class="sr-only">اسم المجلد</label>
+                    <input type="text" id="folder-name" name="name" required maxlength="120"
+                           value="{{ old('name') }}"
+                           placeholder="اسم المجلد الجديد"
+                           class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[12rem]">
+                </div>
+                <button type="submit"
+                        class="btn btn-primary !gap-0 !p-2.5"
+                        title="إنشاء المجلد"
+                        aria-label="إنشاء المجلد">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1Z" />
                     </svg>
                 </button>
-            </div>
+            </form>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <form method="POST" action="{{ route('media-folders.import') }}" enctype="multipart/form-data" class="inline">
-                    @csrf
-                    <input type="file" id="media-folders-import-zips" name="archives[]" accept=".zip,application/zip"
-                           class="sr-only" onchange="if (this.files.length) this.form.submit()">
-                    <label for="media-folders-import-zips" class="btn btn-secondary cursor-pointer"
-                           title="اختر ملف ZIP واحد يحتوي مجلدات/صور">استيراد ZIP</label>
-                </form>
+            <form method="POST" action="{{ route('media-folders.import') }}" enctype="multipart/form-data" class="inline">
+                @csrf
+                <input type="file" id="media-folders-import-zips" name="archives[]" accept=".zip,application/zip"
+                       class="sr-only" onchange="if (this.files.length) this.form.submit()">
+                <label for="media-folders-import-zips"
+                       class="btn btn-secondary !gap-0 !p-2.5 cursor-pointer"
+                       title="استيراد ZIP — اختر ملف ZIP يحتوي مجلدات/صور"
+                       aria-label="استيراد ZIP">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06L12.44 2.44A1.5 1.5 0 0 0 11.378 2H4.5Zm4 3.75a.75.75 0 0 1 .75.75v.5h.5a.75.75 0 0 1 0 1.5h-.5v.5h.5a.75.75 0 0 1 0 1.5h-.5v.5h.5a.75.75 0 0 1 0 1.5h-.5v.75a.75.75 0 0 1-1.5 0V12.5h-.5a.75.75 0 0 1 0-1.5h.5v-.5h-.5a.75.75 0 0 1 0-1.5h.5v-.5h-.5a.75.75 0 0 1 0-1.5h.5v-.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                    </svg>
+                </label>
+            </form>
 
-                <button type="button"
-                        id="media-folders-multi-pick-btn"
-                        class="btn btn-secondary"
-                        data-import-url="{{ route('media-folders.import') }}"
-                        data-index-url="{{ route('media-images.index') }}"
-                        data-csrf="{{ csrf_token() }}"
-                        title="اختر مجلداً واحداً لاستيراد كل صوره">
-                    استيراد مجلد
-                </button>
+            <button type="button"
+                    id="media-folders-multi-pick-btn"
+                    class="btn btn-secondary !gap-0 !p-2.5"
+                    data-import-url="{{ route('media-folders.import') }}"
+                    data-index-url="{{ route('media-images.index') }}"
+                    data-csrf="{{ csrf_token() }}"
+                    title="استيراد مجلد — اختر مجلداً واحداً لاستيراد كل صوره"
+                    aria-label="استيراد مجلد">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path d="M3.5 3A1.5 1.5 0 0 0 2 4.5v11A1.5 1.5 0 0 0 3.5 17h13a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-3.12-3.122A1.5 1.5 0 0 0 13.378 3H3.5Zm6.5 4a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 1 1 1.06-1.06l.72.72V7.75A.75.75 0 0 1 10 7Z" />
+                </svg>
+            </button>
 
-                <form method="POST" action="{{ route('media-folders.import') }}" enctype="multipart/form-data" class="inline" id="media-folders-parent-form">
-                    @csrf
-                    <input type="file" id="media-folders-import-parent" name="images[]" accept="image/*" multiple
-                           webkitdirectory directory
-                           class="sr-only">
-                </form>
+            <form method="POST" action="{{ route('media-folders.import') }}" enctype="multipart/form-data" class="inline" id="media-folders-parent-form">
+                @csrf
+                <input type="file" id="media-folders-import-parent" name="images[]" accept="image/*" multiple
+                       webkitdirectory directory
+                       class="sr-only">
+            </form>
 
-                @if ($folders->isEmpty())
-                    <span class="btn btn-secondary opacity-50 cursor-not-allowed" title="لا توجد مجلدات للتصدير">تصدير المجلدات</span>
-                @else
-                    <a href="{{ route('media-folders.export') }}" class="btn btn-secondary">تصدير المجلدات</a>
-                @endif
-            </div>
+            @if ($folders->isEmpty())
+                <span class="btn btn-secondary !gap-0 !p-2.5 opacity-50 cursor-not-allowed"
+                      title="لا توجد مجلدات للتصدير"
+                      aria-label="تصدير المجلدات">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.69L6.3 8.49a.75.75 0 0 0-1.1 1.02l3.25 3.5a.75.75 0 0 0 1.1 0l3.25-3.5a.75.75 0 1 0-1.1-1.02l-2.95 3.15V2.75Z" />
+                        <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                    </svg>
+                </span>
+            @else
+                <a href="{{ route('media-folders.export') }}"
+                   class="btn btn-secondary !gap-0 !p-2.5"
+                   title="تصدير المجلدات"
+                   aria-label="تصدير المجلدات">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                        <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.69L6.3 8.49a.75.75 0 0 0-1.1 1.02l3.25 3.5a.75.75 0 0 0 1.1 0l3.25-3.5a.75.75 0 1 0-1.1-1.02l-2.95 3.15V2.75Z" />
+                        <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                    </svg>
+                </a>
+            @endif
+
+            <button type="button"
+                    id="media-settings-open"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
+                    style="background-color:#64748b;"
+                    title="إعدادات المكتبة"
+                    aria-label="إعدادات المكتبة">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </button>
         </div>
     </section>
 

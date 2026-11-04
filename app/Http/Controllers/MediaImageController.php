@@ -27,15 +27,21 @@ class MediaImageController extends Controller
         return view('media-images.index', compact('folders', 'mediaSettings'));
     }
 
-    public function store(Request $request, MediaFolder $mediaFolder): RedirectResponse
+    public function store(Request $request, MediaFolder $mediaFolder): RedirectResponse|JsonResponse
     {
         $maxKb = MediaLibrarySettings::maxUploadKb();
         $maxPerFolder = MediaLibrarySettings::maxImagesPerFolder();
 
         if ($mediaFolder->images()->count() >= $maxPerFolder) {
+            $message = "وصل المجلد إلى الحد الأقصى ({$maxPerFolder} صورة).";
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
             return redirect()
                 ->route('media-folders.show', $mediaFolder)
-                ->with('status', "وصل المجلد إلى الحد الأقصى ({$maxPerFolder} صورة).");
+                ->with('status', $message);
         }
 
         $request->validate([
@@ -48,7 +54,23 @@ class MediaImageController extends Controller
             ],
         ]);
 
-        MediaImage::createFromUpload($request->file('image'), $mediaFolder->id);
+        $media = MediaImage::createFromUpload($request->file('image'), $mediaFolder->id);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $media->id,
+                    'name' => $media->name,
+                    'extension' => $media->extension,
+                    'display_name' => $media->displayName(),
+                    'folder_name' => $mediaFolder->name,
+                    'url' => $media->url(),
+                    'cards_count' => 0,
+                    'is_used' => false,
+                ],
+                'message' => 'تم إدراج الصورة في المجلد.',
+            ]);
+        }
 
         return redirect()
             ->route('media-folders.show', $mediaFolder)
