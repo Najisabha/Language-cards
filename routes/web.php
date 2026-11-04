@@ -129,6 +129,10 @@ Route::middleware('admin')->group(function (): void {
         ->shallow()
         ->except(['index', 'show']);
 
+    Route::post('categories/{category}/match-media-folder', [CategoryController::class, 'matchMediaFolder'])
+        ->whereNumber('category')
+        ->name('categories.match-media-folder');
+
     Route::resource('categories.cards', CardController::class)
         ->shallow()
         ->except(['index', 'show']);

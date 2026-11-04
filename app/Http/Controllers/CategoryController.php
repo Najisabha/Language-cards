@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Deck;
+use App\Models\MediaFolder;
+use App\Support\CardMediaFolderMatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -111,5 +113,57 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('decks.show', $deckId)->with('status', 'تم حذف التصنيف.');
+    }
+
+    public function matchMediaFolder(Request $request, Category $category): RedirectResponse
+    {
+        $validated = $request->validate([
+            'folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+            'folder_name' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $folder = null;
+        if (! empty($validated['folder_id'])) {
+            $folder = MediaFolder::query()->find((int) $validated['folder_id']);
+        }
+
+        $folderName = trim((string) ($validated['folder_name'] ?? ''));
+        if (! $folder && $folderName !== '') {
+            $folder = MediaFolder::query()
+                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($folderName, 'UTF-8')])
+                ->first();
+        }
+
+        if (! $folder) {
+            return redirect()
+                ->route('categories.show', $category)
+                ->with('status', 'لم يتم العثور على مجلد بهذا الاسم في مكتبة الصور.');
+        }
+
+        if ($folder->images()->count() === 0) {
+            return redirect()
+                ->route('categories.show', $category)
+                ->with('status', 'المجلد «'.$folder->name.'» فارغ ولا يحتوي صورًا.');
+        }
+
+        $result = CardMediaFolderMatcher::apply($category, $folder);
+
+        $parts = [
+            'تم الربط من المجلد «'.$folder->name.'»: '.$result['matched'].' بطاقة.',
+        ];
+
+        if ($result['unchanged'] > 0) {
+            $parts[] = $result['unchanged'].' كانت مربوطة مسبقًا.';
+        }
+
+        if ($result['unmatched_cards'] !== []) {
+            $sample = array_slice($result['unmatched_cards'], 0, 8);
+            $extra = count($result['unmatched_cards']) - count($sample);
+            $parts[] = 'بدون صورة: '.implode('، ', $sample).($extra > 0 ? '… (+'.$extra.')' : '').'.';
+        }
+
+        return redirect()
+            ->route('categories.show', $category)
+            ->with('status', implode(' ', $parts));
     }
 }

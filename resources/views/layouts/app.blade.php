@@ -123,5 +123,6 @@
     <main class="mx-auto max-w-6xl px-4 py-8">@yield('content')</main>
 
     <footer class="mx-auto max-w-6xl px-4 py-6 text-center text-xs text-slate-400">Flashcards &middot; {{ date('Y') }}</footer>
+    @stack('scripts')
 </body>
 </html>
