@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', $level->name)
 
@@ -20,22 +20,33 @@
             @if ($level->title)
                 <p class="mt-1 text-lg font-semibold text-slate-700">{{ $level->title }}</p>
             @endif
-            <p class="page-subtitle">اختر نوع المحتوى (تحيات، أرقام…) ثم اختر كلمات أو جمل لعرض البطاقات.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             @if (! $level->decks->isEmpty())
-                <a href="{{ route('levels.print.options', $level) }}" class="btn btn-secondary">طباعة</a>
+                <x-icon-action :href="route('levels.print.options', $level)" title="طباعة" color="#0ea5e9">
+                    <x-icons.print />
+                </x-icon-action>
             @endif
             @admin
-                <a href="{{ route('levels.export', $level) }}" class="btn btn-secondary">تصدير بيانات</a>
-                <a href="{{ route('levels.import.form', $level) }}" class="btn btn-secondary">استيراد بيانات</a>
-                <a href="{{ route('levels.edit', $level) }}" class="btn btn-secondary">تعديل</a>
+                <x-icon-action :href="route('levels.export', $level)" title="تصدير بيانات" color="#10b981">
+                    <x-icons.export />
+                </x-icon-action>
+                <x-icon-action :href="route('levels.import.form', $level)" title="استيراد بيانات" color="#f59e0b">
+                    <x-icons.import />
+                </x-icon-action>
+                <x-icon-action :href="route('levels.edit', $level)" title="تعديل" color="#8b5cf6">
+                    <x-icons.edit />
+                </x-icon-action>
                 <form method="POST" action="{{ route('levels.destroy', $level) }}" class="inline" onsubmit="return confirm('حذف المستوى؟ سيتم فصل المجموعات عنه فقط.');">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-secondary text-red-600 hover:border-red-200 hover:bg-red-50">حذف</button>
+                    <x-icon-action type="submit" title="حذف" color="#ef4444">
+                        <x-icons.trash />
+                    </x-icon-action>
                 </form>
-                <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">+ نوع جديد</a>
+                <x-icon-action :href="route('decks.create', ['level_id' => $level->id])" title="نوع جديد" color="#6366f1">
+                    <x-icons.plus />
+                </x-icon-action>
             @endadmin
         </div>
     </section>
@@ -63,7 +74,9 @@
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد أنواع في هذا المستوى بعد.</p>
             @admin
-                <a href="{{ route('decks.create', ['level_id' => $level->id]) }}" class="btn btn-primary">أضف أول نوع</a>
+                <x-icon-action :href="route('decks.create', ['level_id' => $level->id])" title="أضف أول نوع" color="#6366f1">
+                    <x-icons.plus />
+                </x-icon-action>
             @endadmin
         </div>
     @else

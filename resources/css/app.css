@@ -59,20 +59,13 @@ body {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .stats-grid--quad {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .stats-grid--five {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-
     .stat-card {
         padding: 1.25rem;
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
         background: #fff;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        min-width: 0;
     }
 
     .stat-label {
@@ -141,6 +134,27 @@ body {
     }
 }
 
+/* Keep multi-stat rows on one line (outside @layer so they always win). */
+.stats-grid.stats-grid--quad {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.stats-grid.stats-grid--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.stats-grid--five .stat-card,
+.stats-grid--quad .stat-card {
+    padding: 1rem 0.85rem;
+}
+
+.stats-grid--five .stat-value,
+.stats-grid--quad .stat-value {
+    font-size: 1.5rem;
+}
+
 @media (max-width: 768px) {
     .page-hero {
         flex-direction: column;
@@ -150,12 +164,29 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .stats-grid--quad {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .stats-grid.stats-grid--quad {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem;
     }
 
-    .stats-grid--five {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .stats-grid.stats-grid--five {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    .stats-grid--five .stat-card,
+    .stats-grid--quad .stat-card {
+        padding: 0.7rem 0.45rem;
+    }
+
+    .stats-grid--five .stat-label,
+    .stats-grid--quad .stat-label {
+        font-size: 0.68rem;
+    }
+
+    .stats-grid--five .stat-value,
+    .stats-grid--quad .stat-value {
+        font-size: 1.1rem;
     }
 }
 

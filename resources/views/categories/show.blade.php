@@ -25,18 +25,44 @@
             <h1 class="page-title">{{ $category->name }}</h1>
             <p class="page-subtitle">بطاقات {{ $category->name }} ضمن نوع «{{ $deck->name }}».</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('decks.show', $deck) }}" class="btn btn-secondary">رجوع للنوع</a>
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {{-- رجوع --}}
+            <a href="{{ route('decks.show', $deck) }}"
+               title="رجوع للنوع"
+               aria-label="رجوع للنوع"
+               class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
+               style="background-color:#64748b;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M4 12h11" stroke-linecap="round"></path>
+                </svg>
+            </a>
             @admin
-                <div class="flex flex-col items-stretch gap-2">
-                    <a href="{{ route('categories.cards.create', $category) }}" class="btn btn-primary">+ بطاقة جديدة</a>
-                    <button type="button"
-                            id="match-media-folder-open"
-                            class="btn btn-secondary"
-                            @if(($totalCardsCount ?? $cards->count()) === 0) disabled @endif>
-                        ربط صور من مجلد
-                    </button>
-                </div>
+                {{-- بطاقة جديدة --}}
+                <a href="{{ route('categories.cards.create', $category) }}"
+                   title="بطاقة جديدة"
+                   aria-label="بطاقة جديدة"
+                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
+                   style="background-color:#6366f1;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" class="h-5 w-5" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" stroke-linecap="round"></path>
+                    </svg>
+                </a>
+                {{-- ربط صور من مجلد --}}
+                <button type="button"
+                        id="match-media-folder-open"
+                        title="ربط صور من مجلد"
+                        aria-label="ربط صور من مجلد"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+                        style="background-color:#d946ef;"
+                        @if(($totalCardsCount ?? $cards->count()) === 0) disabled @endif>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                        <path d="M3 8a2 2 0 012-2h3.2l1.4 1.8H19a2 2 0 012 2V17a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" stroke-linejoin="round"></path>
+                        <rect x="8.2" y="11.2" width="7.6" height="5.6" rx="1"></rect>
+                        <circle cx="10.4" cy="13.4" r="0.85" fill="#fff" stroke="none"></circle>
+                        <path d="M15.6 16.2l-2.1-2.1-3.3 2.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
             @endadmin
         </div>
     </section>

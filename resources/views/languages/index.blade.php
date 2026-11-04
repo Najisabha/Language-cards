@@ -7,10 +7,11 @@
         <div>
             <p class="page-eyebrow">Languages</p>
             <h1 class="page-title">اللغات</h1>
-            <p class="page-subtitle">ابدأ بإنشاء لغة، ثم أضف مستوياتها ومجموعاتها وبطاقاتها.</p>
         </div>
         @admin
-            <a href="{{ route('languages.create') }}" class="btn btn-primary">+ لغة جديدة</a>
+            <x-icon-action :href="route('languages.create')" title="لغة جديدة" color="#6366f1">
+                <x-icons.plus />
+            </x-icon-action>
         @endadmin
     </section>
 
@@ -33,7 +34,9 @@
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد لغات بعد.</p>
             @admin
-                <a href="{{ route('languages.create') }}" class="btn btn-primary">أضف أول لغة</a>
+                <x-icon-action :href="route('languages.create')" title="أضف أول لغة" color="#6366f1">
+                    <x-icons.plus />
+                </x-icon-action>
             @endadmin
         </div>
     @else

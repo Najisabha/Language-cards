@@ -29,31 +29,6 @@
                     </svg>
                 </a>
 
-                {{-- المستويات --}}
-                <a href="{{ route('levels.index') }}"
-                   title="المستويات"
-                   aria-label="المستويات"
-                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('levels.*') ? 'ring-2 ring-offset-2 ring-emerald-300' : '' }}"
-                   style="background-color:#10b981;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
-                        <path d="M4 20h4V10H4v10zm6 0h4V4h-4v16zm6 0h4v-7h-4v7z" stroke-linejoin="round"></path>
-                    </svg>
-                </a>
-
-                {{-- المجموعات --}}
-                <a href="{{ route('decks.index') }}"
-                   title="المجموعات"
-                   aria-label="المجموعات"
-                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('decks.*') ? 'ring-2 ring-offset-2 ring-violet-300' : '' }}"
-                   style="background-color:#8b5cf6;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
-                        <rect x="3" y="4" width="7" height="7" rx="1.5"></rect>
-                        <rect x="14" y="4" width="7" height="7" rx="1.5"></rect>
-                        <rect x="3" y="13" width="7" height="7" rx="1.5"></rect>
-                        <rect x="14" y="13" width="7" height="7" rx="1.5"></rect>
-                    </svg>
-                </a>
-
                 @admin
                     {{-- مكتبة الصور --}}
                     <a href="{{ route('media-images.index') }}"
@@ -115,10 +90,6 @@
             <div class="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-800 text-sm shadow-sm">{{ session('status') }}</div>
         </div>
     @endif
-
-    <div class="mx-auto max-w-6xl px-4 pt-4 text-xs text-slate-500">
-        عند التصفح: اللغة ← المستوى ← النوع (تحيات، أرقام…) ← كلمات أو جمل ← البطاقات.
-    </div>
 
     <main class="mx-auto max-w-6xl px-4 py-8">@yield('content')</main>
 

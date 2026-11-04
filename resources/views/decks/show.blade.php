@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', $deck->name)
 
@@ -29,11 +29,15 @@
                 @endif
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <x-icon-action :href="route('decks.print.options', $deck)" title="طباعة" color="#0ea5e9">
+                <x-icons.print />
+            </x-icon-action>
             @admin
-                <a href="{{ route('decks.edit', $deck) }}" class="btn btn-secondary">تعديل النوع</a>
+                <x-icon-action :href="route('decks.edit', $deck)" title="تعديل النوع" color="#8b5cf6">
+                    <x-icons.edit />
+                </x-icon-action>
             @endadmin
-            <a href="{{ route('decks.print.options', $deck) }}" class="btn btn-secondary">طباعة</a>
         </div>
     </section>
 

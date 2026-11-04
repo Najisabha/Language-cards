@@ -15,23 +15,34 @@
             <div>
                 <p class="page-eyebrow">Language{{ $language->code ? ' · '.$language->code : '' }}</p>
                 <h1 class="page-title">{{ $language->name }}</h1>
-                <p class="page-subtitle">ابدأ بإضافة المستويات، ثم اختر النوع (تحيات، أرقام…) ثم الكلمات أو الجمل لعرض البطاقات.</p>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             @if ($stats['cards'] > 0)
-                <a href="{{ route('languages.print.options', $language) }}" class="btn btn-secondary">طباعة</a>
+                <x-icon-action :href="route('languages.print.options', $language)" title="طباعة" color="#0ea5e9">
+                    <x-icons.print />
+                </x-icon-action>
             @endif
             @admin
-                <a href="{{ route('languages.export', $language) }}" class="btn btn-secondary">تصدير بيانات</a>
-                <a href="{{ route('languages.import.form', $language) }}" class="btn btn-secondary">استيراد بيانات</a>
-                <a href="{{ route('languages.edit', $language) }}" class="btn btn-secondary">تعديل</a>
+                <x-icon-action :href="route('languages.export', $language)" title="تصدير بيانات" color="#10b981">
+                    <x-icons.export />
+                </x-icon-action>
+                <x-icon-action :href="route('languages.import.form', $language)" title="استيراد بيانات" color="#f59e0b">
+                    <x-icons.import />
+                </x-icon-action>
+                <x-icon-action :href="route('languages.edit', $language)" title="تعديل" color="#8b5cf6">
+                    <x-icons.edit />
+                </x-icon-action>
                 <form method="POST" action="{{ route('languages.destroy', $language) }}" class="inline" onsubmit="return confirm('حذف اللغة؟ سيتم فصل المستويات عنها فقط.');">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-secondary text-red-600 hover:border-red-200 hover:bg-red-50">حذف</button>
+                    <x-icon-action type="submit" title="حذف" color="#ef4444">
+                        <x-icons.trash />
+                    </x-icon-action>
                 </form>
-                <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">+ مستوى جديد</a>
+                <x-icon-action :href="route('levels.create', ['language_id' => $language->id])" title="مستوى جديد" color="#6366f1">
+                    <x-icons.plus />
+                </x-icon-action>
             @endadmin
         </div>
     </section>
@@ -63,7 +74,9 @@
         <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
             <p class="text-slate-500 mb-4">لا توجد مستويات في هذه اللغة بعد.</p>
             @admin
-                <a href="{{ route('levels.create', ['language_id' => $language->id]) }}" class="btn btn-primary">أضف أول مستوى</a>
+                <x-icon-action :href="route('levels.create', ['language_id' => $language->id])" title="أضف أول مستوى" color="#6366f1">
+                    <x-icons.plus />
+                </x-icon-action>
             @endadmin
         </div>
     @else
