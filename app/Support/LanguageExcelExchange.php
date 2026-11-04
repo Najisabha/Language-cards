@@ -240,7 +240,10 @@ final class LanguageExcelExchange
             'levels' => fn ($q) => $q->orderBy('position')->orderBy('name')->with([
                 'decks' => fn ($dq) => $dq->topics()->orderBy('id')->with([
                     'categories' => fn ($cq) => $cq->orderBy('position')->with([
-                        'cards' => fn ($cardQuery) => $cardQuery->orderBy('position')->orderBy('id'),
+                        'cards' => fn ($cardQuery) => $cardQuery
+                            ->orderBy('position')
+                            ->orderBy('id')
+                            ->with('mediaImage'),
                     ]),
                 ]),
             ]),
@@ -265,7 +268,7 @@ final class LanguageExcelExchange
                             $card->en_meaning,
                             $card->ar_meaning,
                             $card->explanation,
-                            $card->iconEmoji() ?? $card->icon,
+                            $card->iconImageUrl() ?? $card->iconEmoji() ?? '',
                         ]], null, 'A'.$rowNumber);
                         $rowNumber++;
                     }

@@ -224,7 +224,10 @@ final class LevelExcelExchange
             'language',
             'decks' => fn ($q) => $q->topics()->orderBy('id')->with([
                 'categories' => fn ($cq) => $cq->orderBy('position')->with([
-                    'cards' => fn ($cardQuery) => $cardQuery->orderBy('position')->orderBy('id'),
+                    'cards' => fn ($cardQuery) => $cardQuery
+                        ->orderBy('position')
+                        ->orderBy('id')
+                        ->with('mediaImage'),
                 ]),
             ]),
         ]);
@@ -246,7 +249,7 @@ final class LevelExcelExchange
                         $card->en_meaning,
                         $card->ar_meaning,
                         $card->explanation,
-                        $card->iconEmoji() ?? $card->icon,
+                        $card->iconImageUrl() ?? $card->iconEmoji() ?? '',
                     ]], null, 'A'.$rowNumber);
                     $rowNumber++;
                 }

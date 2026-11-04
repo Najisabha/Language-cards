@@ -163,11 +163,8 @@ class MediaImage extends Model
 
         $path = $this->path;
 
-        if (Storage::disk('card_uploads')->exists($path)) {
-            return asset('uploads/'.$path);
-        }
-
-        if (Storage::disk('public')->exists($path)) {
+        // Migrate legacy public-disk files when present; always return a stable /uploads URL for export/UI.
+        if (! Storage::disk('card_uploads')->exists($path) && Storage::disk('public')->exists($path)) {
             try {
                 Storage::disk('card_uploads')->put(
                     $path,
@@ -177,15 +174,9 @@ class MediaImage extends Model
             } catch (\Throwable) {
                 return Storage::disk('public')->url($path);
             }
-
-            if (Storage::disk('card_uploads')->exists($path)) {
-                return asset('uploads/'.$path);
-            }
-
-            return Storage::disk('public')->url($path);
         }
 
-        return null;
+        return asset('uploads/'.$path);
     }
 
     public function displayName(): string
