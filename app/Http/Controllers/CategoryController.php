@@ -14,7 +14,7 @@ class CategoryController extends Controller
     {
         $category->load([
             'deck.level.language',
-            'cards' => fn ($q) => $q->orderBy('position'),
+            'cards' => fn ($q) => $q->orderBy('position')->with('mediaImage'),
         ]);
 
         $deck = $category->deck;

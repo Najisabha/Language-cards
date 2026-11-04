@@ -14,6 +14,7 @@
     $initialFrontType = old('front_bg_type', $card->front_bg_type ?? 'color');
     $initialFrontValue = old('front_bg_value', $card->front_bg_value ?? '#ffffff');
     $iconImageUrl = $card->iconImageUrl();
+    $selectedMediaImageId = old('media_image_id', $card->media_image_id);
     $deck->loadMissing('level.language');
     $studyLanguageName = $deck->level?->language?->name ?? 'اللغة المختارة';
 @endphp
@@ -77,8 +78,22 @@
                                    class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <p class="text-xs text-slate-500 mt-1">إيموجي نصي.</p>
                         </div>
-                        <div data-ai-icon-url="{{ route('cards.ai-icon-image') }}">
-                            <label for="icon_image" class="sr-only">صورة الأيقونة</label>
+                        <div data-ai-icon-url="{{ route('cards.ai-icon-image') }}"
+                             data-media-search-url="{{ route('media-images.search') }}">
+                            <label for="media_image_search" class="block text-xs font-medium text-slate-600 mb-1">بحث في مكتبة الصور</label>
+                            <input type="search" id="media_image_search" autocomplete="off"
+                                   placeholder="ابحث بالاسم أو الامتداد مثل apple أو png"
+                                   class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div id="media-image-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
+                            <input type="hidden" id="media_image_id" name="media_image_id" value="{{ $selectedMediaImageId }}">
+
+                            <div id="selected-media-preview" class="mt-2 {{ $iconImageUrl ? 'flex' : 'hidden' }} items-center gap-2">
+                                <img id="selected-media-thumb" src="{{ $iconImageUrl }}" alt="" class="h-10 w-10 rounded object-cover border border-slate-200">
+                                <span id="selected-media-label" class="text-xs text-slate-600">{{ $card->mediaImage?->displayName() }}</span>
+                                <button type="button" id="clear-selected-media" class="text-xs text-red-600 hover:underline">إلغاء الاختيار</button>
+                            </div>
+
+                            <label for="icon_image" class="block text-xs font-medium text-slate-600 mt-3 mb-1">أو ارفع صورة جديدة</label>
                             <div class="flex flex-wrap gap-2 items-center">
                                 <input type="file" id="icon_image" name="icon_image" accept="image/*"
                                        class="flex-1 min-w-[10rem] text-sm text-slate-700 file:ml-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:text-indigo-700 hover:file:bg-indigo-100">
@@ -87,15 +102,15 @@
                                     صورة من الويب
                                 </button>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">رفع صورة (تأخذ الأولوية على الإيموجي)، أو جلب صورة مجانية من ويكيميديا كومنز بحسب الكلمة في الوجه الأمامي.</p>
+                            <p class="text-xs text-slate-500 mt-1">البحث يعيد استخدام صورة موجودة بأي لغة. الرفع يحفظ الصورة في المكتبة باسم الملف الأصلي.</p>
                             <p id="ai-icon-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
                             @error('icon_image') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            @error('media_image_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
 
                             @if ($iconImageUrl)
                                 <div class="mt-2 flex items-center gap-2">
-                                    <img src="{{ $iconImageUrl }}" alt="" class="h-10 w-10 rounded object-cover border border-slate-200">
                                     <label class="inline-flex items-center gap-1 text-xs text-red-600 cursor-pointer">
-                                        <input type="checkbox" name="remove_icon_image" value="1"> حذف الصورة الحالية
+                                        <input type="checkbox" name="remove_icon_image" value="1"> إزالة الصورة من هذه البطاقة
                                     </label>
                                 </div>
                             @endif
@@ -178,6 +193,17 @@
 
     const initialIconImageUrl = previewIconImage ? previewIconImage.getAttribute('src') || '' : '';
     let uploadedIconImageUrl = '';
+    let selectedLibraryImageUrl = initialIconImageUrl;
+    const mediaImageIdInput = byId('media_image_id');
+    const mediaSearchInput = byId('media_image_search');
+    const mediaResults = byId('media-image-results');
+    const selectedMediaPreview = byId('selected-media-preview');
+    const selectedMediaThumb = byId('selected-media-thumb');
+    const selectedMediaLabel = byId('selected-media-label');
+    const clearSelectedMediaBtn = byId('clear-selected-media');
+    const mediaSearchUrl = qs('[data-media-search-url]')?.getAttribute('data-media-search-url');
+    let mediaSearchTimer = null;
+    let mediaSearchSeq = 0;
 
     const isHex = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
     const isGradient = (value) => /^(linear|radial|conic)-gradient\s*\(.+\)$/i.test(value);
@@ -218,7 +244,45 @@
     const computeIconImageUrl = () => {
         if (removeIconImage?.checked) return '';
         if (uploadedIconImageUrl) return uploadedIconImageUrl;
-        return initialIconImageUrl || '';
+        if (selectedLibraryImageUrl) return selectedLibraryImageUrl;
+        return '';
+    };
+
+    const updateSelectedMediaPreview = (url, label) => {
+        if (selectedMediaThumb) {
+            if (url) selectedMediaThumb.setAttribute('src', url);
+            else selectedMediaThumb.removeAttribute('src');
+        }
+        if (selectedMediaLabel) selectedMediaLabel.textContent = label || '';
+        if (selectedMediaPreview) {
+            selectedMediaPreview.classList.toggle('hidden', !url);
+            selectedMediaPreview.classList.toggle('flex', !!url);
+        }
+    };
+
+    const clearLibrarySelection = () => {
+        if (mediaImageIdInput) mediaImageIdInput.value = '';
+        selectedLibraryImageUrl = '';
+        updateSelectedMediaPreview('', '');
+    };
+
+    const selectLibraryImage = (item) => {
+        if (mediaImageIdInput) mediaImageIdInput.value = String(item.id);
+        selectedLibraryImageUrl = item.url || '';
+        updateSelectedMediaPreview(item.url || '', item.display_name || '');
+        if (uploadedIconImageUrl) {
+            URL.revokeObjectURL(uploadedIconImageUrl);
+            uploadedIconImageUrl = '';
+        }
+        if (iconImage) iconImage.value = '';
+        if (removeIconImage) removeIconImage.checked = false;
+        if (showIcon) showIcon.checked = true;
+        if (mediaResults) {
+            mediaResults.innerHTML = '';
+            mediaResults.classList.add('hidden');
+        }
+        if (mediaSearchInput) mediaSearchInput.value = item.display_name || '';
+        render();
     };
 
     const render = () => {
@@ -270,15 +334,100 @@
             }
             if (file) {
                 uploadedIconImageUrl = URL.createObjectURL(file);
+                clearLibrarySelection();
                 if (removeIconImage) removeIconImage.checked = false;
+                if (showIcon) showIcon.checked = true;
             }
             render();
         });
     }
 
     if (removeIconImage) {
-        removeIconImage.addEventListener('change', render);
+        removeIconImage.addEventListener('change', () => {
+            if (removeIconImage.checked) {
+                clearLibrarySelection();
+                if (iconImage) iconImage.value = '';
+                if (uploadedIconImageUrl) {
+                    URL.revokeObjectURL(uploadedIconImageUrl);
+                    uploadedIconImageUrl = '';
+                }
+            }
+            render();
+        });
     }
+
+    clearSelectedMediaBtn?.addEventListener('click', () => {
+        clearLibrarySelection();
+        if (mediaSearchInput) mediaSearchInput.value = '';
+        render();
+    });
+
+    const renderMediaResults = (items) => {
+        if (!mediaResults) return;
+        if (!items.length) {
+            mediaResults.innerHTML = '<p class="px-3 py-2 text-xs text-slate-500">لا توجد نتائج.</p>';
+            mediaResults.classList.remove('hidden');
+            return;
+        }
+
+        mediaResults.innerHTML = items.map((item) => `
+            <button type="button"
+                    class="media-result-item flex w-full items-center gap-2 px-3 py-2 text-right text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
+                    data-id="${item.id}"
+                    data-url="${item.url || ''}"
+                    data-name="${(item.display_name || '').replace(/"/g, '&quot;')}">
+                <img src="${item.url || ''}" alt="" class="h-8 w-8 rounded object-cover border border-slate-200 bg-slate-50">
+                <span class="truncate">${item.display_name || ''}</span>
+            </button>
+        `).join('');
+        mediaResults.classList.remove('hidden');
+
+        qsa('.media-result-item', mediaResults).forEach((btn) => {
+            btn.addEventListener('click', () => {
+                selectLibraryImage({
+                    id: Number(btn.getAttribute('data-id')),
+                    url: btn.getAttribute('data-url') || '',
+                    display_name: btn.getAttribute('data-name') || '',
+                });
+            });
+        });
+    };
+
+    const runMediaSearch = async () => {
+        if (!mediaSearchUrl || !mediaSearchInput) return;
+        const q = (mediaSearchInput.value || '').trim();
+        if (!q) {
+            if (mediaResults) {
+                mediaResults.innerHTML = '';
+                mediaResults.classList.add('hidden');
+            }
+            return;
+        }
+
+        const seq = ++mediaSearchSeq;
+        try {
+            const res = await fetch(`${mediaSearchUrl}?q=${encodeURIComponent(q)}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            if (!res.ok || seq !== mediaSearchSeq) return;
+            const data = await res.json();
+            renderMediaResults(Array.isArray(data.data) ? data.data : []);
+        } catch {
+            // Keep form usable if search fails.
+        }
+    };
+
+    mediaSearchInput?.addEventListener('input', () => {
+        if (mediaSearchTimer) window.clearTimeout(mediaSearchTimer);
+        mediaSearchTimer = window.setTimeout(runMediaSearch, 250);
+    });
+
+    mediaSearchInput?.addEventListener('focus', () => {
+        if ((mediaSearchInput.value || '').trim()) runMediaSearch();
+    });
 
     render();
 

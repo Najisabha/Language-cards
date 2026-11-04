@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Card;
 use App\Models\Category;
 use App\Models\Deck;
-use Illuminate\Http\RedirectResponse;
+use App\Models\MediaImage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -52,7 +52,7 @@ class CardController extends Controller
 
     public function edit(Card $card): View
     {
-        $card->load('category.deck.level.language');
+        $card->load('category.deck.level.language', 'mediaImage');
         $category = $card->category;
         $deck = $category->deck;
 
@@ -74,8 +74,7 @@ class CardController extends Controller
     {
         $categoryId = $card->category_id;
 
-        $this->deleteStoredIconImage($card->icon_image_path);
-
+        // Shared library files are not deleted with the card.
         $card->delete();
 
         return redirect()->route('categories.show', $categoryId)->with('status', 'تم حذف البطاقة.');
@@ -96,7 +95,6 @@ class CardController extends Controller
         return response()->json(['duplicate' => $duplicate]);
     }
 
-
     private function validateCard(Request $request, ?Card $card = null, ?Deck $deck = null): array
     {
         $validated = $request->validate([
@@ -114,6 +112,7 @@ class CardController extends Controller
                 'mimes:jpg,jpeg,png,webp,gif,svg',
                 'mimetypes:image/jpeg,image/png,image/webp,image/gif,image/svg+xml',
             ],
+            'media_image_id' => ['nullable', 'integer', 'exists:media_images,id'],
             'remove_icon_image' => ['sometimes', 'boolean'],
             'show_en' => ['sometimes', 'boolean'],
             'show_ar' => ['sometimes', 'boolean'],
@@ -135,7 +134,9 @@ class CardController extends Controller
             'show_icon' => $request->boolean('show_icon'),
         ];
 
-        $data['icon_image_path'] = $this->resolveIconImagePath($request, $card);
+        $resolved = $this->resolveMediaImage($request, $card);
+        $data['media_image_id'] = $resolved['media_image_id'];
+        $data['icon_image_path'] = $resolved['icon_image_path'];
         $this->ensureUniqueWordPerLanguage($data['word'], $deck, $card);
 
         return $data;
@@ -177,43 +178,52 @@ class CardController extends Controller
         return $query->exists();
     }
 
-    private function resolveIconImagePath(Request $request, ?Card $card): ?string
+    /**
+     * @return array{media_image_id: ?int, icon_image_path: ?string}
+     */
+    private function resolveMediaImage(Request $request, ?Card $card): array
     {
-        $existingPath = $card?->icon_image_path;
+        $existingId = $card?->media_image_id;
+        $existingPath = $card?->mediaImage?->path ?? $card?->icon_image_path;
 
         if ($request->hasFile('icon_image')) {
-            if ($existingPath) {
-                $this->deleteStoredIconImage($existingPath);
-            }
+            $media = MediaImage::createFromUpload($request->file('icon_image'));
 
-            return $request->file('icon_image')->store('card-icons', 'card_uploads');
+            return [
+                'media_image_id' => $media->id,
+                'icon_image_path' => $media->path,
+            ];
         }
 
         if ($request->boolean('remove_icon_image')) {
-            if ($existingPath) {
-                $this->deleteStoredIconImage($existingPath);
+            return [
+                'media_image_id' => null,
+                'icon_image_path' => null,
+            ];
+        }
+
+        // Hidden field is always present; empty value means unlink from this card.
+        if ($request->has('media_image_id')) {
+            $rawId = $request->input('media_image_id');
+            if ($rawId === null || $rawId === '') {
+                return [
+                    'media_image_id' => null,
+                    'icon_image_path' => null,
+                ];
             }
-            return null;
+
+            $media = MediaImage::query()->find((int) $rawId);
+
+            return [
+                'media_image_id' => $media?->id,
+                'icon_image_path' => $media?->path,
+            ];
         }
 
-        return $existingPath;
-    }
-
-    private function deleteStoredIconImage(?string $path): void
-    {
-        if (! $path) {
-            return;
-        }
-
-        if (Storage::disk('card_uploads')->exists($path)) {
-            Storage::disk('card_uploads')->delete($path);
-
-            return;
-        }
-
-        if (Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->delete($path);
-        }
+        return [
+            'media_image_id' => $existingId,
+            'icon_image_path' => $existingPath,
+        ];
     }
 
     private function sanitizeFrontBgValue(string $type, string $value): string

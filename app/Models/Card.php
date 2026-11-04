@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class Card extends Model
 {
@@ -22,6 +21,7 @@ class Card extends Model
         'explanation',
         'icon',
         'icon_image_path',
+        'media_image_id',
         'show_en',
         'show_ar',
         'show_explanation',
@@ -47,40 +47,26 @@ class Card extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function mediaImage(): BelongsTo
+    {
+        return $this->belongsTo(MediaImage::class);
+    }
+
     /**
      * Public URL for the back-face icon image under /uploads/… (no storage symlink needed).
-     * Legacy files in storage/app/public are copied here on first view so old /storage URLs stop 404ing.
      */
     public function iconImageUrl(): ?string
     {
+        $media = $this->mediaImage;
+        if ($media) {
+            return $media->url();
+        }
+
+        // Legacy fallback while old rows may still only have icon_image_path.
         if (! $this->icon_image_path) {
             return null;
         }
 
-        $path = $this->icon_image_path;
-
-        if (Storage::disk('card_uploads')->exists($path)) {
-            return asset('uploads/'.$path);
-        }
-
-        if (Storage::disk('public')->exists($path)) {
-            try {
-                Storage::disk('card_uploads')->put(
-                    $path,
-                    Storage::disk('public')->get($path)
-                );
-                Storage::disk('public')->delete($path);
-            } catch (\Throwable) {
-                return Storage::disk('public')->url($path);
-            }
-
-            if (Storage::disk('card_uploads')->exists($path)) {
-                return asset('uploads/'.$path);
-            }
-
-            return Storage::disk('public')->url($path);
-        }
-
-        return null;
+        return (new MediaImage(['path' => $this->icon_image_path]))->url();
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LevelController;
+use App\Http\Controllers\MediaImageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('languages.index'));
@@ -65,6 +66,16 @@ Route::middleware('admin')->group(function (): void {
     Route::post('cards/check-duplicate-word', [CardController::class, 'checkWordDuplicate'])
         ->middleware('throttle:30,1')
         ->name('cards.check-duplicate-word');
+
+    Route::get('media-images/search', [MediaImageController::class, 'search'])
+        ->middleware('throttle:60,1')
+        ->name('media-images.search');
+    Route::get('media-images', [MediaImageController::class, 'index'])->name('media-images.index');
+    Route::post('media-images', [MediaImageController::class, 'store'])->name('media-images.store');
+    Route::post('media-images/import', [MediaImageController::class, 'import'])->name('media-images.import');
+    Route::get('media-images/export', [MediaImageController::class, 'export'])->name('media-images.export');
+    Route::patch('media-images/{media_image}', [MediaImageController::class, 'update'])->name('media-images.update');
+    Route::delete('media-images/{media_image}', [MediaImageController::class, 'destroy'])->name('media-images.destroy');
 
     Route::resource('languages', LanguageController::class)->except(['index', 'show']);
     Route::get('languages/{language}/export', [LanguageController::class, 'export'])

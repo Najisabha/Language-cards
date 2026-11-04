@@ -24,6 +24,17 @@
                 <a href="{{ route('decks.index') }}"
                    class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('decks.*') ? 'bg-slate-100 font-semibold' : '' }}">المجموعات</a>
                 @admin
+                    <a href="{{ route('media-images.index') }}"
+                       title="مكتبة الصور"
+                       aria-label="مكتبة الصور"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('media-images.*') ? 'bg-slate-100 font-semibold text-indigo-700' : 'text-slate-700' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5" aria-hidden="true">
+                            <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                            <circle cx="8.5" cy="10" r="1.5"></circle>
+                            <path d="M21 15l-5-5-8 8" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        <span class="hidden sm:inline">الصور</span>
+                    </a>
                     <a href="{{ route('languages.create') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-sm">+ لغة جديدة</a>
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf

@@ -245,7 +245,7 @@ final class LevelExcelExchange
                         $card->en_meaning,
                         $card->ar_meaning,
                         $card->explanation,
-                        $card->icon,
+                        $card->iconImageUrl() ?? $card->icon,
                     ]], null, 'A'.$rowNumber);
                     $rowNumber++;
                 }
