@@ -2,8 +2,9 @@
 
 @php
     $iconImageUrl = $card->iconImageUrl();
+    $iconEmoji = $card->iconEmoji();
     $hasIconImage = $card->show_icon && $iconImageUrl;
-    $hasIconEmoji = $card->show_icon && ! $hasIconImage && $card->icon;
+    $hasIconEmoji = $card->show_icon && $iconEmoji;
     $hasMedia = $hasIconImage || $hasIconEmoji;
 
     $unifyBg = ! empty($printSettings['unify_backgrounds'] ?? false)
@@ -27,9 +28,17 @@
     <div class="flashcard-back-media {{ $hasMedia ? '' : 'is-empty' }}"
          @if ($unifyBg) style="background: {{ $unifiedBgValue }}; border-bottom-color: rgba(0,0,0,0.08);" @endif>
         @if ($hasIconImage)
-            <img src="{{ $iconImageUrl }}" alt="" class="flashcard-back-image">
+            <img src="{{ $iconImageUrl }}" alt="" class="flashcard-back-image"
+                 @if ($hasIconEmoji)
+                 onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');"
+                 @else
+                 onerror="this.remove(); this.parentElement?.classList.add('is-empty');"
+                 @endif>
+            @if ($hasIconEmoji)
+                <div class="flashcard-back-emoji hidden">{{ $iconEmoji }}</div>
+            @endif
         @elseif ($hasIconEmoji)
-            <div class="flashcard-back-emoji">{{ $card->icon }}</div>
+            <div class="flashcard-back-emoji">{{ $iconEmoji }}</div>
         @endif
     </div>
     <div class="flashcard-back-text">

@@ -163,13 +163,14 @@ final class LanguageExcelExchange
                     'en_meaning' => $this->nullableString($row[$columnMap['en_meaning'] ?? -1] ?? null, 255),
                     'ar_meaning' => $this->nullableString($row[$columnMap['ar_meaning'] ?? -1] ?? null, 255),
                     'explanation' => $this->nullableString($row[$columnMap['explanation'] ?? -1] ?? null, 1000),
-                    'icon' => $this->nullableString($row[$columnMap['icon'] ?? -1] ?? null, 16),
+                    'icon' => $this->sanitizeIconEmoji($row[$columnMap['icon'] ?? -1] ?? null),
                     'show_en' => true,
                     'show_ar' => true,
                     'show_explanation' => false,
                     'show_icon' => false,
                     'position' => 0,
                 ];
+                $payload['show_icon'] = $payload['icon'] !== null;
 
                 $level = Level::query()->firstOrCreate(
                     [
@@ -264,7 +265,7 @@ final class LanguageExcelExchange
                             $card->en_meaning,
                             $card->ar_meaning,
                             $card->explanation,
-                            $card->iconImageUrl() ?? $card->icon,
+                            $card->iconEmoji() ?? $card->icon,
                         ]], null, 'A'.$rowNumber);
                         $rowNumber++;
                     }
@@ -358,6 +359,20 @@ final class LanguageExcelExchange
         }
 
         return $max === null ? $text : mb_substr($text, 0, $max);
+    }
+
+    private function sanitizeIconEmoji(mixed $value): ?string
+    {
+        $icon = $this->nullableString($value, 16);
+        if ($icon === null) {
+            return null;
+        }
+
+        if (str_starts_with($icon, 'http://') || str_starts_with($icon, 'https://') || str_starts_with($icon, '/')) {
+            return null;
+        }
+
+        return $icon;
     }
 
     private function findCardInLanguage(int $languageId, string $normalizedWord): ?Card

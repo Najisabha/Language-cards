@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LevelController;
+use App\Http\Controllers\MediaFolderController;
 use App\Http\Controllers\MediaImageController;
 use Illuminate\Support\Facades\Route;
 
@@ -71,9 +72,23 @@ Route::middleware('admin')->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('media-images.search');
     Route::get('media-images', [MediaImageController::class, 'index'])->name('media-images.index');
-    Route::post('media-images', [MediaImageController::class, 'store'])->name('media-images.store');
-    Route::post('media-images/import', [MediaImageController::class, 'import'])->name('media-images.import');
-    Route::get('media-images/export', [MediaImageController::class, 'export'])->name('media-images.export');
+
+    Route::get('media-folders/search', [MediaFolderController::class, 'search'])
+        ->middleware('throttle:60,1')
+        ->name('media-folders.search');
+    Route::post('media-folders', [MediaFolderController::class, 'store'])->name('media-folders.store');
+    Route::put('media-library/settings', [MediaFolderController::class, 'updateSettings'])->name('media-library.settings.update');
+    Route::post('media-folders/import', [MediaFolderController::class, 'import'])->name('media-folders.import');
+    Route::get('media-folders/export', [MediaFolderController::class, 'export'])->name('media-folders.export');
+    Route::get('media-folders/{media_folder}', [MediaFolderController::class, 'show'])->name('media-folders.show');
+    Route::patch('media-folders/{media_folder}', [MediaFolderController::class, 'update'])->name('media-folders.update');
+    Route::delete('media-folders/{media_folder}', [MediaFolderController::class, 'destroy'])->name('media-folders.destroy');
+
+    Route::post('media-folders/{media_folder}/images', [MediaImageController::class, 'store'])->name('media-folders.images.store');
+    Route::post('media-folders/{media_folder}/images/import', [MediaImageController::class, 'import'])->name('media-folders.images.import');
+    Route::get('media-folders/{media_folder}/images/export', [MediaImageController::class, 'export'])->name('media-folders.images.export');
+    Route::delete('media-folders/{media_folder}/images', [MediaImageController::class, 'destroyAll'])->name('media-folders.images.destroy-all');
+
     Route::patch('media-images/{media_image}', [MediaImageController::class, 'update'])->name('media-images.update');
     Route::delete('media-images/{media_image}', [MediaImageController::class, 'destroy'])->name('media-images.destroy');
 

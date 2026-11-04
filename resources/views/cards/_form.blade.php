@@ -79,12 +79,30 @@
                             <p class="text-xs text-slate-500 mt-1">إيموجي نصي.</p>
                         </div>
                         <div data-ai-icon-url="{{ route('cards.ai-icon-image') }}"
-                             data-media-search-url="{{ route('media-images.search') }}">
-                            <label for="media_image_search" class="block text-xs font-medium text-slate-600 mb-1">بحث في مكتبة الصور</label>
-                            <input type="search" id="media_image_search" autocomplete="off"
-                                   placeholder="ابحث بالاسم أو الامتداد مثل apple أو png"
-                                   class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <div id="media-image-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
+                             data-media-search-url="{{ route('media-images.search') }}"
+                             data-media-folder-search-url="{{ route('media-folders.search') }}">
+                            <p class="block text-xs font-medium text-slate-600 mb-2">بحث في مكتبة الصور</p>
+
+                            <div class="space-y-2">
+                                <div>
+                                    <label for="media_folder_search" class="mb-1 block text-xs text-slate-500">اسم المجلد</label>
+                                    <input type="search" id="media_folder_search" autocomplete="off"
+                                           placeholder="ابحث عن اسم المجلد"
+                                           class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <div id="media-folder-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
+                                    <input type="hidden" id="media_folder_id" value="">
+                                </div>
+
+                                <div>
+                                    <label for="media_image_search" class="mb-1 block text-xs text-slate-500">اسم الصورة</label>
+                                    <input type="search" id="media_image_search" autocomplete="off" disabled
+                                           placeholder="اختر مجلداً أولاً ثم ابحث عن الصورة"
+                                           class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                    <p id="media-image-search-hint" class="mt-1 text-[11px] text-amber-600">اختر مجلداً من نتائج البحث أعلاه أولاً.</p>
+                                    <div id="media-image-results" class="mt-2 hidden max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm"></div>
+                                </div>
+                            </div>
+
                             <input type="hidden" id="media_image_id" name="media_image_id" value="{{ $selectedMediaImageId }}">
 
                             <div id="selected-media-preview" class="mt-2 {{ $iconImageUrl ? 'flex' : 'hidden' }} items-center gap-2">
@@ -102,7 +120,7 @@
                                     صورة من الويب
                                 </button>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">البحث يعيد استخدام صورة موجودة بأي لغة. الرفع يحفظ الصورة في المكتبة باسم الملف الأصلي.</p>
+                            <p class="text-xs text-slate-500 mt-1">اختر المجلد أولاً من نتائج البحث، ثم ابحث عن اسم الصورة داخله. الرفع يحفظ صورة جديدة في المكتبة.</p>
                             <p id="ai-icon-error" class="text-xs text-red-600 mt-1 hidden" role="alert"></p>
                             @error('icon_image') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                             @error('media_image_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
@@ -195,15 +213,22 @@
     let uploadedIconImageUrl = '';
     let selectedLibraryImageUrl = initialIconImageUrl;
     const mediaImageIdInput = byId('media_image_id');
+    const mediaFolderIdInput = byId('media_folder_id');
+    const mediaFolderSearchInput = byId('media_folder_search');
     const mediaSearchInput = byId('media_image_search');
+    const mediaFolderResults = byId('media-folder-results');
     const mediaResults = byId('media-image-results');
     const selectedMediaPreview = byId('selected-media-preview');
     const selectedMediaThumb = byId('selected-media-thumb');
     const selectedMediaLabel = byId('selected-media-label');
     const clearSelectedMediaBtn = byId('clear-selected-media');
-    const mediaSearchUrl = qs('[data-media-search-url]')?.getAttribute('data-media-search-url');
+    const mediaSearchRoot = qs('[data-media-search-url]');
+    const mediaSearchUrl = mediaSearchRoot?.getAttribute('data-media-search-url');
+    const mediaFolderSearchUrl = mediaSearchRoot?.getAttribute('data-media-folder-search-url');
     let mediaSearchTimer = null;
+    let mediaFolderSearchTimer = null;
     let mediaSearchSeq = 0;
+    let mediaFolderSearchSeq = 0;
 
     const isHex = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
     const isGradient = (value) => /^(linear|radial|conic)-gradient\s*\(.+\)$/i.test(value);
@@ -277,6 +302,10 @@
         if (iconImage) iconImage.value = '';
         if (removeIconImage) removeIconImage.checked = false;
         if (showIcon) showIcon.checked = true;
+        if (mediaFolderResults) {
+            mediaFolderResults.innerHTML = '';
+            mediaFolderResults.classList.add('hidden');
+        }
         if (mediaResults) {
             mediaResults.innerHTML = '';
             mediaResults.classList.add('hidden');
@@ -356,30 +385,106 @@
         });
     }
 
+    const hideResults = (el) => {
+        if (!el) return;
+        el.innerHTML = '';
+        el.classList.add('hidden');
+    };
+
     clearSelectedMediaBtn?.addEventListener('click', () => {
         clearLibrarySelection();
+        if (mediaFolderSearchInput) mediaFolderSearchInput.value = '';
+        if (mediaFolderIdInput) mediaFolderIdInput.value = '';
         if (mediaSearchInput) mediaSearchInput.value = '';
+        hideResults(mediaFolderResults);
+        hideResults(mediaResults);
+        setImageSearchEnabled(false);
         render();
     });
+
+    const mediaImageSearchHint = byId('media-image-search-hint');
+
+    const setImageSearchEnabled = (enabled) => {
+        if (mediaSearchInput) {
+            mediaSearchInput.disabled = !enabled;
+            mediaSearchInput.placeholder = enabled
+                ? 'ابحث عن اسم الصورة أو الامتداد داخل المجلد المختار'
+                : 'اختر مجلداً أولاً ثم ابحث عن الصورة';
+        }
+        if (mediaImageSearchHint) {
+            mediaImageSearchHint.classList.toggle('hidden', enabled);
+        }
+        if (!enabled) {
+            hideResults(mediaResults);
+        }
+    };
+
+    const selectFolder = (folder) => {
+        if (mediaFolderIdInput) mediaFolderIdInput.value = String(folder.id || '');
+        if (mediaFolderSearchInput) mediaFolderSearchInput.value = folder.name || '';
+        hideResults(mediaFolderResults);
+        setImageSearchEnabled(true);
+        if (mediaSearchInput) {
+            mediaSearchInput.focus();
+            runImageSearch();
+        }
+    };
+
+    const renderFolderResults = (items) => {
+        if (!mediaFolderResults) return;
+        if (!items.length) {
+            mediaFolderResults.innerHTML = '<p class="px-3 py-2 text-xs text-slate-500">لا توجد مجلدات مطابقة.</p>';
+            mediaFolderResults.classList.remove('hidden');
+            return;
+        }
+
+        mediaFolderResults.innerHTML = items.map((item) => `
+            <button type="button"
+                    class="media-folder-result-item flex w-full items-center justify-between gap-2 px-3 py-2 text-right text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
+                    data-id="${item.id}"
+                    data-name="${(item.name || '').replace(/"/g, '&quot;')}">
+                <span class="font-medium truncate">${item.name || ''}</span>
+                <span class="shrink-0 text-[11px] text-slate-400">${Number(item.images_count || 0)} صورة</span>
+            </button>
+        `).join('');
+        mediaFolderResults.classList.remove('hidden');
+
+        qsa('.media-folder-result-item', mediaFolderResults).forEach((btn) => {
+            btn.addEventListener('click', () => {
+                selectFolder({
+                    id: Number(btn.getAttribute('data-id')),
+                    name: btn.getAttribute('data-name') || '',
+                });
+            });
+        });
+    };
 
     const renderMediaResults = (items) => {
         if (!mediaResults) return;
         if (!items.length) {
-            mediaResults.innerHTML = '<p class="px-3 py-2 text-xs text-slate-500">لا توجد نتائج.</p>';
+            mediaResults.innerHTML = '<p class="px-3 py-2 text-xs text-slate-500">لا توجد صور مطابقة.</p>';
             mediaResults.classList.remove('hidden');
             return;
         }
 
-        mediaResults.innerHTML = items.map((item) => `
+        mediaResults.innerHTML = items.map((item) => {
+            const isUsed = !!item.is_used || Number(item.cards_count || 0) > 0;
+            const usedStyle = isUsed ? 'background-color:#86efac;' : '';
+            const usedLabel = isUsed
+                ? `<span class="mr-auto shrink-0 text-[11px] font-semibold" style="color:#000;">مستخدمة${Number(item.cards_count || 0) > 0 ? ` (${Number(item.cards_count)})` : ''}</span>`
+                : '';
+            return `
             <button type="button"
-                    class="media-result-item flex w-full items-center gap-2 px-3 py-2 text-right text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0"
+                    class="media-result-item flex w-full items-center gap-2 px-3 py-2 text-right text-sm border-b border-slate-100 last:border-0 ${isUsed ? '' : 'hover:bg-indigo-50'}"
+                    style="${usedStyle}"
                     data-id="${item.id}"
                     data-url="${item.url || ''}"
                     data-name="${(item.display_name || '').replace(/"/g, '&quot;')}">
                 <img src="${item.url || ''}" alt="" class="h-8 w-8 rounded object-cover border border-slate-200 bg-slate-50">
-                <span class="truncate">${item.display_name || ''}</span>
-            </button>
-        `).join('');
+                <span class="truncate" style="${isUsed ? 'color:#000;' : ''}">${item.display_name || ''}</span>
+                ${usedLabel}
+            </button>`;
+        }).join('');
         mediaResults.classList.remove('hidden');
 
         qsa('.media-result-item', mediaResults).forEach((btn) => {
@@ -393,20 +498,47 @@
         });
     };
 
-    const runMediaSearch = async () => {
-        if (!mediaSearchUrl || !mediaSearchInput) return;
-        const q = (mediaSearchInput.value || '').trim();
+    const runFolderSearch = async () => {
+        if (!mediaFolderSearchUrl || !mediaFolderSearchInput) return;
+        const q = (mediaFolderSearchInput.value || '').trim();
         if (!q) {
-            if (mediaResults) {
-                mediaResults.innerHTML = '';
-                mediaResults.classList.add('hidden');
-            }
+            if (mediaFolderIdInput) mediaFolderIdInput.value = '';
+            hideResults(mediaFolderResults);
             return;
         }
 
+        const seq = ++mediaFolderSearchSeq;
+        try {
+            const res = await fetch(`${mediaFolderSearchUrl}?q=${encodeURIComponent(q)}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            if (!res.ok || seq !== mediaFolderSearchSeq) return;
+            const data = await res.json();
+            renderFolderResults(Array.isArray(data.data) ? data.data : []);
+        } catch {
+            // Keep form usable if search fails.
+        }
+    };
+
+    const runImageSearch = async () => {
+        if (!mediaSearchUrl) return;
+        const folderId = (mediaFolderIdInput?.value || '').trim();
+        if (!folderId) {
+            setImageSearchEnabled(false);
+            hideResults(mediaResults);
+            return;
+        }
+
+        const q = (mediaSearchInput?.value || '').trim();
         const seq = ++mediaSearchSeq;
         try {
-            const res = await fetch(`${mediaSearchUrl}?q=${encodeURIComponent(q)}`, {
+            const params = new URLSearchParams();
+            params.set('folder_id', folderId);
+            if (q) params.set('q', q);
+            const res = await fetch(`${mediaSearchUrl}?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -420,13 +552,32 @@
         }
     };
 
-    mediaSearchInput?.addEventListener('input', () => {
-        if (mediaSearchTimer) window.clearTimeout(mediaSearchTimer);
-        mediaSearchTimer = window.setTimeout(runMediaSearch, 250);
+    setImageSearchEnabled(false);
+
+    mediaFolderSearchInput?.addEventListener('input', () => {
+        if (mediaFolderIdInput) mediaFolderIdInput.value = '';
+        setImageSearchEnabled(false);
+        hideResults(mediaResults);
+        if (mediaFolderSearchTimer) window.clearTimeout(mediaFolderSearchTimer);
+        mediaFolderSearchTimer = window.setTimeout(runFolderSearch, 250);
     });
 
+    mediaSearchInput?.addEventListener('input', () => {
+        if (!(mediaFolderIdInput?.value || '').trim()) {
+            setImageSearchEnabled(false);
+            hideResults(mediaResults);
+            return;
+        }
+        hideResults(mediaFolderResults);
+        if (mediaSearchTimer) window.clearTimeout(mediaSearchTimer);
+        mediaSearchTimer = window.setTimeout(runImageSearch, 250);
+    });
+
+    mediaFolderSearchInput?.addEventListener('focus', () => {
+        if ((mediaFolderSearchInput.value || '').trim() && !mediaFolderIdInput?.value) runFolderSearch();
+    });
     mediaSearchInput?.addEventListener('focus', () => {
-        if ((mediaSearchInput.value || '').trim()) runMediaSearch();
+        if ((mediaFolderIdInput?.value || '').trim()) runImageSearch();
     });
 
     render();

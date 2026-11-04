@@ -69,4 +69,21 @@ class Card extends Model
 
         return (new MediaImage(['path' => $this->icon_image_path]))->url();
     }
+
+    /**
+     * Emoji/text icon only — ignores truncated image URLs stored in the icon column by mistake.
+     */
+    public function iconEmoji(): ?string
+    {
+        $icon = trim((string) $this->icon);
+        if ($icon === '') {
+            return null;
+        }
+
+        if (str_starts_with($icon, 'http://') || str_starts_with($icon, 'https://') || str_starts_with($icon, '/')) {
+            return null;
+        }
+
+        return $icon;
+    }
 }

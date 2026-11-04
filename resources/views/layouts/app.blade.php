@@ -16,32 +16,95 @@
                 <span class="font-extrabold text-lg tracking-tight">Flashcards</span>
             </a>
 
-            <nav class="flex items-center gap-2 text-sm">
+            <nav class="flex items-center gap-1.5 sm:gap-2">
+                {{-- اللغات --}}
                 <a href="{{ route('languages.index') }}"
-                   class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('languages.*') ? 'bg-slate-100 font-semibold' : '' }}">اللغات</a>
+                   title="اللغات"
+                   aria-label="اللغات"
+                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('languages.*') && ! request()->routeIs('languages.create') ? 'ring-2 ring-offset-2 ring-sky-300' : '' }}"
+                   style="background-color:#0ea5e9;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" stroke-linecap="round"></path>
+                    </svg>
+                </a>
+
+                {{-- المستويات --}}
                 <a href="{{ route('levels.index') }}"
-                   class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('levels.*') ? 'bg-slate-100 font-semibold' : '' }}">المستويات</a>
+                   title="المستويات"
+                   aria-label="المستويات"
+                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('levels.*') ? 'ring-2 ring-offset-2 ring-emerald-300' : '' }}"
+                   style="background-color:#10b981;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                        <path d="M4 20h4V10H4v10zm6 0h4V4h-4v16zm6 0h4v-7h-4v7z" stroke-linejoin="round"></path>
+                    </svg>
+                </a>
+
+                {{-- المجموعات --}}
                 <a href="{{ route('decks.index') }}"
-                   class="px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('decks.*') ? 'bg-slate-100 font-semibold' : '' }}">المجموعات</a>
+                   title="المجموعات"
+                   aria-label="المجموعات"
+                   class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('decks.*') ? 'ring-2 ring-offset-2 ring-violet-300' : '' }}"
+                   style="background-color:#8b5cf6;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                        <rect x="3" y="4" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="4" width="7" height="7" rx="1.5"></rect>
+                        <rect x="3" y="13" width="7" height="7" rx="1.5"></rect>
+                        <rect x="14" y="13" width="7" height="7" rx="1.5"></rect>
+                    </svg>
+                </a>
+
                 @admin
+                    {{-- مكتبة الصور --}}
                     <a href="{{ route('media-images.index') }}"
                        title="مكتبة الصور"
                        aria-label="مكتبة الصور"
-                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-md hover:bg-slate-100 {{ request()->routeIs('media-images.*') ? 'bg-slate-100 font-semibold text-indigo-700' : 'text-slate-700' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5" aria-hidden="true">
+                       class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('media-images.*') || request()->routeIs('media-folders.*') ? 'ring-2 ring-offset-2 ring-fuchsia-300' : '' }}"
+                       style="background-color:#d946ef;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
                             <rect x="3" y="5" width="18" height="14" rx="2"></rect>
                             <circle cx="8.5" cy="10" r="1.5"></circle>
                             <path d="M21 15l-5-5-8 8" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
-                        <span class="hidden sm:inline">الصور</span>
                     </a>
-                    <a href="{{ route('languages.create') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-sm">+ لغة جديدة</a>
+
+                    {{-- لغة جديدة --}}
+                    <a href="{{ route('languages.create') }}"
+                       title="لغة جديدة"
+                       aria-label="لغة جديدة"
+                       class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90 {{ request()->routeIs('languages.create') ? 'ring-2 ring-offset-2 ring-amber-300' : '' }}"
+                       style="background-color:#f59e0b;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" class="h-5 w-5" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" stroke-linecap="round"></path>
+                        </svg>
+                    </a>
+
+                    {{-- خروج --}}
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
-                        <button type="submit" class="px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100">خروج</button>
+                        <button type="submit"
+                                title="خروج"
+                                aria-label="خروج"
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
+                                style="background-color:#ef4444;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                                <path d="M10 7V5a2 2 0 0 1 2-2h7v18h-7a2 2 0 0 1-2-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M15 12H3m0 0 3-3m-3 3 3 3" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100">دخول المدير</a>
+                    {{-- دخول المدير --}}
+                    <a href="{{ route('login') }}"
+                       title="دخول المدير"
+                       aria-label="دخول المدير"
+                       class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
+                       style="background-color:#64748b;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
+                            <path d="M14 7V5a2 2 0 0 0-2-2H5v18h7a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M9 12h12m0 0-3-3m3 3-3 3" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </a>
                 @endadmin
             </nav>
         </div>
