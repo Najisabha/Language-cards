@@ -52,12 +52,15 @@ class CategoryController extends Controller
                 ->values();
         }
 
+        $soleCategoryInDeck = $deck->categories()->count() === 1;
+
         return view('categories.show', [
             'category' => $category,
             'deck' => $deck,
             'cards' => $cards,
             'q' => $q,
             'totalCardsCount' => $category->cards->count(),
+            'soleCategoryInDeck' => $soleCategoryInDeck,
         ]);
     }
 

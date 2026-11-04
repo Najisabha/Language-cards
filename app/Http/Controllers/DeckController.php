@@ -134,12 +134,18 @@ class DeckController extends Controller
         return redirect()->route('decks.show', $deck)->with('status', 'تم إنشاء النوع بنجاح.');
     }
 
-    public function show(Deck $deck): View
+    public function show(Request $request, Deck $deck): View|RedirectResponse
     {
         $deck->load([
             'level.language',
             'categories' => fn ($q) => $q->withCount('cards')->orderBy('position'),
         ]);
+
+        // Skip the category chooser when only one category exists (e.g. Words only).
+        // Use ?manage=1 to keep the deck page (edit/print) when needed.
+        if ($deck->categories->count() === 1 && ! $request->boolean('manage')) {
+            return redirect()->route('categories.show', $deck->categories->first());
+        }
 
         $stats = [
             'cards' => $deck->cards()->count(),

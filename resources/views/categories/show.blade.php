@@ -25,11 +25,18 @@
             <h1 class="page-title">{{ $category->name }}</h1>
             <p class="page-subtitle">بطاقات {{ $category->name }} ضمن نوع «{{ $deck->name }}».</p>
         </div>
+        @php
+            $soleCategoryInDeck = $soleCategoryInDeck ?? false;
+            $backUrl = $soleCategoryInDeck && $deck->level
+                ? route('levels.show', $deck->level)
+                : route('decks.show', ['deck' => $deck, 'manage' => 1]);
+            $backTitle = $soleCategoryInDeck ? 'رجوع للمستوى' : 'رجوع للنوع';
+        @endphp
         <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {{-- رجوع --}}
-            <a href="{{ route('decks.show', $deck) }}"
-               title="رجوع للنوع"
-               aria-label="رجوع للنوع"
+            <a href="{{ $backUrl }}"
+               title="{{ $backTitle }}"
+               aria-label="{{ $backTitle }}"
                class="inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition hover:opacity-90"
                style="background-color:#64748b;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" class="h-5 w-5" aria-hidden="true">
@@ -37,6 +44,16 @@
                     <path d="M4 12h11" stroke-linecap="round"></path>
                 </svg>
             </a>
+            @if ($soleCategoryInDeck)
+                <x-icon-action :href="route('decks.print.options', $deck)" title="طباعة" color="#0ea5e9">
+                    <x-icons.print />
+                </x-icon-action>
+                @admin
+                    <x-icon-action :href="route('decks.edit', $deck)" title="تعديل النوع" color="#8b5cf6">
+                        <x-icons.edit />
+                    </x-icon-action>
+                @endadmin
+            @endif
             @admin
                 {{-- بطاقة جديدة --}}
                 <a href="{{ route('categories.cards.create', $category) }}"
