@@ -59,7 +59,7 @@
                     @csrf
                     <input type="file" id="media-folders-import-parent" name="images[]" accept="image/*" multiple
                            webkitdirectory directory
-                           class="sr-only" onchange="if (this.files.length) this.form.submit()">
+                           class="sr-only">
                 </form>
 
                 @if ($folders->isEmpty())
@@ -254,8 +254,10 @@
         const maxMb = {{ (int) $mediaSettings['max_upload_mb'] }};
         const maxBytes = maxMb * 1024 * 1024;
         const maxImages = {{ (int) $mediaSettings['max_images_per_folder'] }};
+        // PHP max_file_uploads is often 20 — stay safely under it.
+        const batchSize = 15;
 
-        const collectFromDirectory = async (dirHandle, folderName, formData, report) => {
+        const collectFromDirectory = async (dirHandle, folderName, items, report) => {
             for await (const entry of dirHandle.values()) {
                 if (entry.kind === 'file') {
                     const file = await entry.getFile();
@@ -268,26 +270,102 @@
                         report.skipped.push(file.name + ' (أكبر من ' + maxMb + 'MB)');
                         continue;
                     }
-                    if (report.imported >= maxImages) {
+                    if (items.length >= maxImages) {
                         report.skipped.push(file.name + ' (تجاوز حد المجلد)');
                         continue;
                     }
-                    formData.append('images[]', file, file.name);
-                    formData.append('folder_names[]', folderName);
-                    report.imported += 1;
+                    items.push({ file, folderName });
                 } else if (entry.kind === 'directory') {
-                    await collectFromDirectory(entry, folderName, formData, report);
+                    await collectFromDirectory(entry, folderName, items, report);
                 }
             }
         };
 
-        const formDataHasImages = (formData) => {
-            for (const key of formData.keys()) {
-                if (key === 'images[]' || key === 'images') {
-                    return true;
+        const collectFromFileList = (fileList) => {
+            const items = [];
+            const report = { skipped: [] };
+
+            Array.from(fileList || []).forEach((file) => {
+                const isImage = (file.type && file.type.startsWith('image/')) || imageExt.test(file.name);
+                if (!isImage) {
+                    report.skipped.push(file.name + ' (ليس صورة)');
+                    return;
+                }
+                if (file.size > maxBytes) {
+                    report.skipped.push(file.name + ' (أكبر من ' + maxMb + 'MB)');
+                    return;
+                }
+                if (items.length >= maxImages) {
+                    report.skipped.push(file.name + ' (تجاوز حد المجلد)');
+                    return;
+                }
+
+                const relative = String(file.webkitRelativePath || file.name).replace(/\\/g, '/');
+                const parts = relative.split('/').filter(Boolean);
+                const folderName = parts.length >= 2 ? parts[0] : 'مستورد';
+                items.push({ file, folderName });
+            });
+
+            return { items, report };
+        };
+
+        const uploadBatches = async (items, report) => {
+            for (let offset = 0; offset < items.length; offset += batchSize) {
+                const chunk = items.slice(offset, offset + batchSize);
+                const formData = new FormData();
+                formData.append('_token', csrf || '');
+
+                chunk.forEach(({ file, folderName }) => {
+                    formData.append('images[]', file, file.name);
+                    formData.append('folder_names[]', folderName);
+                });
+
+                const isLast = offset + batchSize >= items.length;
+                if (isLast && report.skipped.length) {
+                    formData.append('client_skipped_count', String(report.skipped.length));
+                    formData.append('client_skipped_names', report.skipped.slice(0, 20).join(' | '));
+                }
+
+                const response = await fetch(importUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrf || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html',
+                    },
+                    credentials: 'same-origin',
+                    redirect: 'follow',
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
                 }
             }
-            return false;
+        };
+
+        const runImport = async (items, report, folderLabel) => {
+            if (!items.length) {
+                const skippedNote = report.skipped.length
+                    ? `\nملفات لم تُستورد: ${report.skipped.slice(0, 8).join('، ')}`
+                    : '';
+                alert(`لم يتم العثور على صور صالحة داخل المجلد «${folderLabel}».${skippedNote}`);
+                return;
+            }
+
+            btn.disabled = true;
+            const oldLabel = btn.textContent;
+            btn.textContent = 'جاري الاستيراد...';
+
+            try {
+                await uploadBatches(items, report);
+                window.location.href = indexUrl || '/media-images';
+            } catch (error) {
+                console.error(error);
+                alert('تعذر رفع المجلد. حاول مرة أخرى.');
+                btn.disabled = false;
+                btn.textContent = oldLabel || 'استيراد مجلد';
+            }
         };
 
         btn.addEventListener('click', async () => {
@@ -308,59 +386,29 @@
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('_token', csrf || '');
-            const report = { imported: 0, skipped: [] };
+            const items = [];
+            const report = { skipped: [] };
 
             try {
-                await collectFromDirectory(dirHandle, dirHandle.name, formData, report);
+                await collectFromDirectory(dirHandle, dirHandle.name, items, report);
             } catch (error) {
                 console.error(error);
                 alert('تعذر قراءة محتويات المجلد.');
                 return;
             }
 
-            if (!formDataHasImages(formData)) {
-                const skippedNote = report.skipped.length
-                    ? `\nملفات لم تُستورد: ${report.skipped.slice(0, 8).join('، ')}`
-                    : '';
-                alert(`لم يتم العثور على صور صالحة داخل المجلد «${dirHandle.name}».${skippedNote}`);
+            await runImport(items, report, dirHandle.name);
+        });
+
+        fallbackInput?.addEventListener('change', async () => {
+            if (!fallbackInput.files || !fallbackInput.files.length) {
                 return;
             }
 
-            if (report.skipped.length) {
-                formData.append('client_skipped_count', String(report.skipped.length));
-                formData.append('client_skipped_names', report.skipped.slice(0, 20).join(' | '));
-            }
-
-            btn.disabled = true;
-            const oldLabel = btn.textContent;
-            btn.textContent = 'جاري الاستيراد...';
-
-            try {
-                const response = await fetch(importUrl, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': csrf || '',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'text/html',
-                    },
-                    credentials: 'same-origin',
-                    redirect: 'follow',
-                });
-
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
-                }
-
-                window.location.href = indexUrl || response.url || '/media-images';
-            } catch (error) {
-                console.error(error);
-                alert('تعذر رفع المجلد. حاول مرة أخرى.');
-                btn.disabled = false;
-                btn.textContent = oldLabel || 'استيراد مجلد';
-            }
+            const { items, report } = collectFromFileList(fallbackInput.files);
+            const label = items[0]?.folderName || 'المجلد';
+            fallbackInput.value = '';
+            await runImport(items, report, label);
         });
     })();
     </script>

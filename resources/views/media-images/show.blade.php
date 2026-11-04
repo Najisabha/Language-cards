@@ -23,11 +23,17 @@
                 <label for="media-store-input" class="btn btn-primary cursor-pointer">إدراج صورة</label>
             </form>
 
-            <form method="POST" action="{{ route('media-folders.images.import', $folder) }}" enctype="multipart/form-data" class="inline">
+            <form method="POST" action="{{ route('media-folders.images.import', $folder) }}" enctype="multipart/form-data" class="inline" id="media-folder-import-form">
                 @csrf
                 <input type="file" id="media-import-input" name="images[]" accept="image/*" multiple
                        webkitdirectory directory
-                       class="sr-only" onchange="if (this.files.length) this.form.submit()">
+                       class="sr-only"
+                       data-import-url="{{ route('media-folders.images.import', $folder) }}"
+                       data-redirect-url="{{ route('media-folders.show', $folder) }}"
+                       data-csrf="{{ csrf_token() }}"
+                       data-max-mb="{{ (int) $mediaSettings['max_upload_mb'] }}"
+                       data-max-images="{{ (int) $mediaSettings['max_images_per_folder'] }}"
+                       data-current-count="{{ $images->count() }}">
                 <label for="media-import-input" class="btn btn-secondary cursor-pointer" title="اختر مجلداً من جهازك لاستيراد كل الصور داخله">استيراد الصور</label>
             </form>
 
@@ -127,4 +133,79 @@
             @endforeach
         </div>
     @endif
+
+    <script>
+    (() => {
+        const input = document.getElementById('media-import-input');
+        if (!input) return;
+
+        const importUrl = input.getAttribute('data-import-url');
+        const redirectUrl = input.getAttribute('data-redirect-url');
+        const csrf = input.getAttribute('data-csrf');
+        const maxMb = Number(input.getAttribute('data-max-mb') || 2);
+        const maxBytes = maxMb * 1024 * 1024;
+        const maxImages = Number(input.getAttribute('data-max-images') || 100);
+        const currentCount = Number(input.getAttribute('data-current-count') || 0);
+        const remaining = Math.max(0, maxImages - currentCount);
+        const batchSize = 15;
+        const imageExt = /\.(jpe?g|png|webp|gif|svg)$/i;
+
+        input.addEventListener('change', async () => {
+            const files = Array.from(input.files || []);
+            input.value = '';
+            if (!files.length) return;
+
+            const accepted = [];
+            let skipped = 0;
+
+            for (const file of files) {
+                const isImage = (file.type && file.type.startsWith('image/')) || imageExt.test(file.name);
+                if (!isImage || file.size > maxBytes) {
+                    skipped++;
+                    continue;
+                }
+                if (accepted.length >= remaining) {
+                    skipped++;
+                    continue;
+                }
+                accepted.push(file);
+            }
+
+            if (!accepted.length) {
+                alert('لم يتم العثور على صور صالحة للاستيراد ضمن الحد المسموح.');
+                return;
+            }
+
+            try {
+                for (let offset = 0; offset < accepted.length; offset += batchSize) {
+                    const chunk = accepted.slice(offset, offset + batchSize);
+                    const formData = new FormData();
+                    formData.append('_token', csrf || '');
+                    chunk.forEach((file) => formData.append('images[]', file, file.name));
+
+                    const response = await fetch(importUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrf || '',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html',
+                        },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                }
+
+                window.location.href = redirectUrl || window.location.href;
+            } catch (error) {
+                console.error(error);
+                alert('تعذر استيراد الصور. حاول مرة أخرى.');
+            }
+        });
+    })();
+    </script>
 @endsection
