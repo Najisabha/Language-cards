@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $category->name.' — '.$deck->name)
+@section('title', $deck->name.' — '.$category->name)
 
 @section('content')
     <div class="mb-4 text-sm text-slate-500">
@@ -21,9 +21,8 @@
 
     <section class="page-hero mb-8">
         <div>
-            <p class="page-eyebrow">{{ $deck->name }} · {{ $deck->level?->name }}</p>
-            <h1 class="page-title">{{ $category->name }}</h1>
-            <p class="page-subtitle">بطاقات {{ $category->name }} ضمن نوع «{{ $deck->name }}».</p>
+            <p class="page-eyebrow">{{ $category->name }}</p>
+            <h1 class="page-title">{{ $deck->name }}</h1>
         </div>
         @php
             $soleCategoryInDeck = $soleCategoryInDeck ?? false;
@@ -182,7 +181,7 @@
                 @foreach ($cards as $card)
                     <article class="deck-card-item rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
                         <div class="mb-3 flex items-center justify-between">
-                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">بطاقة</span>
+                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600">{{ $category->name }}</span>
                             @admin
                                 <div class="flex items-center gap-1 text-xs">
                                     <a href="{{ route('cards.edit', $card) }}" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">تعديل</a>
