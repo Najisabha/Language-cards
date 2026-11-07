@@ -11,6 +11,8 @@ use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -220,8 +222,89 @@ class LevelController extends Controller
 
         $level->migrateLegacyWordSentenceDecks();
 
-        $result = $excel->import($level, $request->file('file'));
+        $uploaded = $request->file('file');
+        $analysis = $excel->analyzeDuplicates($uploaded);
 
+        if ($analysis['errors'] !== []) {
+            return redirect()
+                ->route('levels.import.form', $level)
+                ->withErrors($analysis['errors']);
+        }
+
+        if ($analysis['duplicates'] === []) {
+            return $this->finishLevelImport($level, $excel->import($level, $uploaded));
+        }
+
+        $extension = strtolower($uploaded->getClientOriginalExtension() ?: 'xlsx');
+        $token = (string) Str::uuid();
+        $path = $uploaded->storeAs('pending-imports', $token.'.'.$extension);
+
+        session([
+            'level_import_'.$level->id => [
+                'token' => $token,
+                'path' => $path,
+                'analysis' => $analysis,
+            ],
+        ]);
+
+        return redirect()->route('levels.import.confirm', $level);
+    }
+
+    public function importConfirmForm(Level $level): View|RedirectResponse
+    {
+        $level->load('language');
+        $pending = session('level_import_'.$level->id);
+
+        if (! is_array($pending) || empty($pending['path']) || empty($pending['analysis'])) {
+            return redirect()
+                ->route('levels.import.form', $level)
+                ->withErrors(['file' => 'انتهت صلاحية ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $analysis = $pending['analysis'];
+
+        return view('levels.import-confirm', compact('level', 'analysis'));
+    }
+
+    public function importConfirm(Request $request, Level $level, LevelExcelExchange $excel): RedirectResponse
+    {
+        $pending = session('level_import_'.$level->id);
+
+        if (! is_array($pending) || empty($pending['path'])) {
+            return redirect()
+                ->route('levels.import.form', $level)
+                ->withErrors(['file' => 'انتهت صلاحية ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $absolutePath = Storage::path($pending['path']);
+
+        if (! is_file($absolutePath)) {
+            $this->forgetLevelImport($level);
+
+            return redirect()
+                ->route('levels.import.form', $level)
+                ->withErrors(['file' => 'تعذر العثور على ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $level->migrateLegacyWordSentenceDecks();
+        $result = $excel->import($level, $absolutePath, quietDuplicates: true);
+        $this->forgetLevelImport($level);
+
+        return $this->finishLevelImport($level, $result);
+    }
+
+    public function importCancel(Level $level): RedirectResponse
+    {
+        $this->forgetLevelImport($level);
+
+        return redirect()->route('levels.import.form', $level);
+    }
+
+    /**
+     * @param  array{created: int, updated: int, skipped: int, errors: list<string>}  $result
+     */
+    private function finishLevelImport(Level $level, array $result): RedirectResponse
+    {
         $message = sprintf(
             'تم الاستيراد: %d جديدة، %d محدّثة، %d متخطاة.',
             $result['created'],
@@ -241,6 +324,17 @@ class LevelController extends Controller
         }
 
         return redirect()->route('levels.show', $level)->with('status', $message);
+    }
+
+    private function forgetLevelImport(Level $level): void
+    {
+        $pending = session('level_import_'.$level->id);
+
+        if (is_array($pending) && ! empty($pending['path'])) {
+            Storage::delete($pending['path']);
+        }
+
+        session()->forget('level_import_'.$level->id);
     }
 
     public function edit(Level $level): View

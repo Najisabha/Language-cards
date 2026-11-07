@@ -19,9 +19,6 @@
         <div>
             <p class="page-eyebrow">استيراد Excel</p>
             <h1 class="page-title">{{ $level->name }}</h1>
-            <p class="page-subtitle max-w-xl">
-                ارفع ملف Excel بنفس أعمدة التصدير لإضافة أو تحديث بطاقات هذا المستوى.
-            </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <a href="{{ route('levels.import.template', $level) }}" class="btn btn-secondary">تحميل قالب فارغ</a>
@@ -40,10 +37,7 @@
     @endif
 
     <section class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="mb-2 text-lg font-bold text-slate-900">رفع الملف</h2>
-        <p class="mb-5 text-sm text-slate-500">
-            الصيغ المدعومة: <span dir="ltr">.xlsx</span> و <span dir="ltr">.xls</span>. الحد الأقصى 10 ميجابايت.
-        </p>
+        <h2 class="mb-5 text-lg font-bold text-slate-900">رفع الملف</h2>
 
         <form action="{{ route('levels.import', $level) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
@@ -69,8 +63,8 @@
             <li>الأعمدة المطلوبة: <strong>النوع</strong> و<strong>الكلمة</strong>.</li>
             <li>إذا كانت الفئة فارغة تُستخدم «الكلمات» تلقائياً.</li>
             <li>باقي الإعدادات (اللون، الخلفية، الإظهار، الترتيب) تُضبط تلقائياً بالقيم الافتراضية.</li>
-            <li>الكلمة الموجودة مسبقاً في هذا المستوى تُحدَّث، والجديدة تُضاف.</li>
-            <li>الكلمة الموجودة في مستوى آخر ضمن نفس اللغة تُتخطى.</li>
+            <li>الكلمة الموجودة مسبقاً في هذه اللغة تُستبدل ببيانات ملف Excel، والجديدة تُضاف.</li>
+            <li>إذا وُجدت كلمات مكررة داخل الملف ستظهر صفحة تأكيد قبل الاستيراد، ويُبقى أول ظهور لكل كلمة.</li>
         </ul>
     </section>
 @endsection

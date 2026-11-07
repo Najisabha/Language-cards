@@ -67,27 +67,56 @@ final class LevelExcelExchange
     }
 
     /**
+     * @return array{
+     *     total: int,
+     *     duplicate_rows: int,
+     *     will_import: int,
+     *     duplicates: list<array{word: string, lines: list<int>}>,
+     *     errors: list<string>
+     * }
+     */
+    public function analyzeDuplicates(UploadedFile|string $file): array
+    {
+        [$rows, $columnMap, $errors] = $this->loadRows($file);
+
+        if ($errors !== []) {
+            return [
+                'total' => 0,
+                'duplicate_rows' => 0,
+                'will_import' => 0,
+                'duplicates' => [],
+                'errors' => $errors,
+            ];
+        }
+
+        if (! isset($columnMap['word'], $columnMap['deck_name'])) {
+            return [
+                'total' => 0,
+                'duplicate_rows' => 0,
+                'will_import' => 0,
+                'duplicates' => [],
+                'errors' => ['أعمدة مطلوبة مفقودة: يجب وجود «النوع» و«الكلمة» في الصف الأول.'],
+            ];
+        }
+
+        return $this->buildDuplicateReport($rows, $columnMap['word']);
+    }
+
+    /**
      * @return array{created: int, updated: int, skipped: int, errors: list<string>}
      */
-    public function import(Level $level, UploadedFile $file): array
+    public function import(Level $level, UploadedFile|string $file, bool $quietDuplicates = false): array
     {
-        $spreadsheet = IOFactory::load($file->getRealPath());
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, true, false);
+        [$rows, $columnMap, $loadErrors] = $this->loadRows($file);
 
-        $spreadsheet->disconnectWorksheets();
-
-        if ($rows === []) {
+        if ($loadErrors !== []) {
             return [
                 'created' => 0,
                 'updated' => 0,
                 'skipped' => 0,
-                'errors' => ['الملف فارغ.'],
+                'errors' => $loadErrors,
             ];
         }
-
-        $headerRow = array_shift($rows);
-        $columnMap = $this->mapHeaders(array_map(fn ($value) => $this->normalizeHeader((string) $value), $headerRow ?? []));
 
         if (! isset($columnMap['word'], $columnMap['deck_name'])) {
             return [
@@ -110,6 +139,7 @@ final class LevelExcelExchange
             $rows,
             $columnMap,
             $languageId,
+            $quietDuplicates,
             &$created,
             &$updated,
             &$skipped,
@@ -138,10 +168,12 @@ final class LevelExcelExchange
                     continue;
                 }
 
-                $normalizedWord = mb_strtolower($word, 'UTF-8');
+                $normalizedWord = $this->normalizeWord($word);
                 if (isset($seenInFile[$normalizedWord])) {
                     $skipped++;
-                    $errors[] = "الصف {$line}: الكلمة «{$word}» مكررة داخل الملف.";
+                    if (! $quietDuplicates) {
+                        $errors[] = "الصف {$line}: الكلمة «{$word}» مكررة داخل الملف.";
+                    }
                     continue;
                 }
                 $seenInFile[$normalizedWord] = true;
@@ -168,12 +200,6 @@ final class LevelExcelExchange
                 $payload['show_icon'] = $payload['icon'] !== null;
 
                 $existing = $this->findCardInLanguage($languageId, $normalizedWord);
-
-                if ($existing && (int) $existing->deck?->level_id !== (int) $level->id) {
-                    $skipped++;
-                    $errors[] = "الصف {$line}: الكلمة «{$word}» موجودة في مستوى آخر ضمن نفس اللغة.";
-                    continue;
-                }
 
                 $deck = Deck::query()->firstOrCreate(
                     [
@@ -216,6 +242,90 @@ final class LevelExcelExchange
         });
 
         return compact('created', 'updated', 'skipped', 'errors');
+    }
+
+    /**
+     * @return array{0: list<array<int, mixed>>, 1: array<string, int>, 2: list<string>}
+     */
+    private function loadRows(UploadedFile|string $file): array
+    {
+        $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray(null, true, true, false);
+        $spreadsheet->disconnectWorksheets();
+
+        if ($rows === []) {
+            return [[], [], ['الملف فارغ.']];
+        }
+
+        $headerRow = array_shift($rows);
+        $columnMap = $this->mapHeaders(array_map(fn ($value) => $this->normalizeHeader((string) $value), $headerRow ?? []));
+
+        return [$rows, $columnMap, []];
+    }
+
+    /**
+     * @param  list<array<int, mixed>>  $rows
+     * @return array{
+     *     total: int,
+     *     duplicate_rows: int,
+     *     will_import: int,
+     *     duplicates: list<array{word: string, lines: list<int>}>,
+     *     errors: list<string>
+     * }
+     */
+    private function buildDuplicateReport(array $rows, int $wordColumn): array
+    {
+        $occurrences = [];
+        $total = 0;
+
+        foreach ($rows as $index => $row) {
+            if ($this->rowIsEmpty($row)) {
+                continue;
+            }
+
+            $word = trim((string) ($row[$wordColumn] ?? ''));
+            if ($word === '') {
+                continue;
+            }
+
+            $total++;
+            $key = $this->normalizeWord($word);
+            $line = $index + 2;
+
+            if (! isset($occurrences[$key])) {
+                $occurrences[$key] = [
+                    'word' => $word,
+                    'lines' => [$line],
+                ];
+            } else {
+                $occurrences[$key]['lines'][] = $line;
+            }
+        }
+
+        $duplicates = array_values(array_filter(
+            $occurrences,
+            fn (array $item): bool => count($item['lines']) > 1
+        ));
+
+        $duplicateRows = 0;
+        foreach ($duplicates as $item) {
+            $duplicateRows += count($item['lines']) - 1;
+        }
+
+        return [
+            'total' => $total,
+            'duplicate_rows' => $duplicateRows,
+            'will_import' => $total - $duplicateRows,
+            'duplicates' => $duplicates,
+            'errors' => [],
+        ];
+    }
+
+    private function normalizeWord(string $word): string
+    {
+        return trim($word);
     }
 
     private function buildSpreadsheet(Level $level): Spreadsheet
@@ -367,7 +477,7 @@ final class LevelExcelExchange
             ->join('decks', 'decks.id', '=', 'categories.deck_id')
             ->join('levels', 'levels.id', '=', 'decks.level_id')
             ->where('levels.language_id', $languageId)
-            ->whereRaw('LOWER(TRIM(cards.word)) = ?', [$normalizedWord])
+            ->whereRaw('TRIM(cards.word) = ?', [$normalizedWord])
             ->with('deck')
             ->first();
     }

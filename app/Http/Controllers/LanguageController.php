@@ -10,6 +10,8 @@ use App\Support\PrintLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -48,16 +50,34 @@ class LanguageController extends Controller
         return redirect()->route('languages.show', $language)->with('status', 'تم إنشاء اللغة بنجاح.');
     }
 
-    public function show(Language $language): View
+    public function show(Request $request, Language $language): View
     {
+        $sortOptions = [
+            'position' => 'الترتيب اليدوي',
+            'name_natural' => 'الاسم (طبيعي: A1.1 → A1.2 → A1.10)',
+            'name_asc' => 'الاسم (أبجدي أ → ي)',
+            'name_desc' => 'الاسم (أبجدي ي → أ)',
+            'cards_desc' => 'الأكثر بطاقات',
+            'cards_asc' => 'الأقل بطاقات',
+            'decks_desc' => 'الأكثر أنواع',
+            'decks_asc' => 'الأقل أنواع',
+        ];
+
+        $sort = $request->string('sort')->toString();
+        if (! array_key_exists($sort, $sortOptions)) {
+            $sort = 'position';
+        }
+
         $language->load([
             'levels' => fn ($q) => $q->withCount([
                 'decks',
                 'decks as cards_count' => fn ($query) => $query->join('categories', 'categories.deck_id', '=', 'decks.id')
                     ->join('cards', 'cards.category_id', '=', 'categories.id')
                     ->select(DB::raw('count(cards.id)')),
-            ])->orderBy('position')->orderBy('name'),
+            ]),
         ]);
+
+        $language->setRelation('levels', $this->sortLanguageLevels($language->levels, $sort));
 
         $wordSentenceCounts = Card::query()
             ->join('categories', 'cards.category_id', '=', 'categories.id')
@@ -77,7 +97,28 @@ class LanguageController extends Controller
             'sentences' => (int) $wordSentenceCounts->get(Deck::CATEGORY_SENTENCES, 0),
         ];
 
-        return view('languages.show', compact('language', 'stats'));
+        return view('languages.show', compact('language', 'stats', 'sort', 'sortOptions'));
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Level>  $levels
+     * @return \Illuminate\Support\Collection<int, \App\Models\Level>
+     */
+    private function sortLanguageLevels($levels, string $sort)
+    {
+        return match ($sort) {
+            'name_natural' => $levels->sort(fn ($a, $b) => strnatcasecmp((string) $a->name, (string) $b->name))->values(),
+            'name_asc' => $levels->sortBy(fn ($level) => mb_strtolower((string) $level->name, 'UTF-8'), SORT_STRING)->values(),
+            'name_desc' => $levels->sortByDesc(fn ($level) => mb_strtolower((string) $level->name, 'UTF-8'), SORT_STRING)->values(),
+            'cards_desc' => $levels->sortByDesc('cards_count')->values(),
+            'cards_asc' => $levels->sortBy('cards_count')->values(),
+            'decks_desc' => $levels->sortByDesc('decks_count')->values(),
+            'decks_asc' => $levels->sortBy('decks_count')->values(),
+            default => $levels->sortBy([
+                ['position', 'asc'],
+                ['name', 'asc'],
+            ])->values(),
+        };
     }
 
     public function printOptions(Language $language): View
@@ -176,8 +217,86 @@ class LanguageController extends Controller
             'file.max' => 'حجم الملف يجب ألا يتجاوز 10 ميجابايت.',
         ]);
 
-        $result = $excel->import($language, $request->file('file'));
+        $uploaded = $request->file('file');
+        $analysis = $excel->analyzeDuplicates($uploaded);
 
+        if ($analysis['errors'] !== []) {
+            return redirect()
+                ->route('languages.import.form', $language)
+                ->withErrors($analysis['errors']);
+        }
+
+        if ($analysis['duplicates'] === []) {
+            return $this->finishLanguageImport($language, $excel->import($language, $uploaded));
+        }
+
+        $extension = strtolower($uploaded->getClientOriginalExtension() ?: 'xlsx');
+        $token = (string) Str::uuid();
+        $path = $uploaded->storeAs('pending-imports', $token.'.'.$extension);
+
+        session([
+            'language_import_'.$language->id => [
+                'token' => $token,
+                'path' => $path,
+                'analysis' => $analysis,
+            ],
+        ]);
+
+        return redirect()->route('languages.import.confirm', $language);
+    }
+
+    public function importConfirmForm(Language $language): View|RedirectResponse
+    {
+        $pending = session('language_import_'.$language->id);
+
+        if (! is_array($pending) || empty($pending['path']) || empty($pending['analysis'])) {
+            return redirect()
+                ->route('languages.import.form', $language)
+                ->withErrors(['file' => 'انتهت صلاحية ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $analysis = $pending['analysis'];
+
+        return view('languages.import-confirm', compact('language', 'analysis'));
+    }
+
+    public function importConfirm(Request $request, Language $language, LanguageExcelExchange $excel): RedirectResponse
+    {
+        $pending = session('language_import_'.$language->id);
+
+        if (! is_array($pending) || empty($pending['path'])) {
+            return redirect()
+                ->route('languages.import.form', $language)
+                ->withErrors(['file' => 'انتهت صلاحية ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $absolutePath = Storage::path($pending['path']);
+
+        if (! is_file($absolutePath)) {
+            $this->forgetLanguageImport($language);
+            return redirect()
+                ->route('languages.import.form', $language)
+                ->withErrors(['file' => 'تعذر العثور على ملف الاستيراد. ارفع الملف مرة أخرى.']);
+        }
+
+        $result = $excel->import($language, $absolutePath, quietDuplicates: true);
+        $this->forgetLanguageImport($language);
+
+        return $this->finishLanguageImport($language, $result);
+    }
+
+    public function importCancel(Language $language): RedirectResponse
+    {
+        $this->forgetLanguageImport($language);
+
+        return redirect()->route('languages.import.form', $language);
+    }
+
+    /**
+     * @param  array{created: int, updated: int, skipped: int, errors: list<string>}  $result
+     */
+    private function finishLanguageImport(Language $language, array $result): RedirectResponse
+    {
         $message = sprintf(
             'تم الاستيراد: %d جديدة، %d محدّثة، %d متخطاة.',
             $result['created'],
@@ -197,6 +316,17 @@ class LanguageController extends Controller
         }
 
         return redirect()->route('languages.show', $language)->with('status', $message);
+    }
+
+    private function forgetLanguageImport(Language $language): void
+    {
+        $pending = session('language_import_'.$language->id);
+
+        if (is_array($pending) && ! empty($pending['path'])) {
+            Storage::delete($pending['path']);
+        }
+
+        session()->forget('language_import_'.$language->id);
     }
 
     public function edit(Language $language): View

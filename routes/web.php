@@ -105,6 +105,15 @@ Route::middleware('admin')->group(function (): void {
     Route::post('languages/{language}/import', [LanguageController::class, 'import'])
         ->whereNumber('language')
         ->name('languages.import');
+    Route::get('languages/{language}/import/confirm', [LanguageController::class, 'importConfirmForm'])
+        ->whereNumber('language')
+        ->name('languages.import.confirm');
+    Route::post('languages/{language}/import/confirm', [LanguageController::class, 'importConfirm'])
+        ->whereNumber('language')
+        ->name('languages.import.confirm.submit');
+    Route::post('languages/{language}/import/cancel', [LanguageController::class, 'importCancel'])
+        ->whereNumber('language')
+        ->name('languages.import.cancel');
     Route::resource('levels', LevelController::class)->except(['index', 'show']);
     Route::get('levels/{level}/export', [LevelController::class, 'export'])
         ->whereNumber('level')
@@ -118,6 +127,15 @@ Route::middleware('admin')->group(function (): void {
     Route::post('levels/{level}/import', [LevelController::class, 'import'])
         ->whereNumber('level')
         ->name('levels.import');
+    Route::get('levels/{level}/import/confirm', [LevelController::class, 'importConfirmForm'])
+        ->whereNumber('level')
+        ->name('levels.import.confirm');
+    Route::post('levels/{level}/import/confirm', [LevelController::class, 'importConfirm'])
+        ->whereNumber('level')
+        ->name('levels.import.confirm.submit');
+    Route::post('levels/{level}/import/cancel', [LevelController::class, 'importCancel'])
+        ->whereNumber('level')
+        ->name('levels.import.cancel');
     Route::resource('decks', DeckController::class)->except(['index', 'show']);
 
     Route::get('decks/{deck}/cards/reorder', [DeckController::class, 'reorderCardsForm'])->name('decks.cards.reorder.form');

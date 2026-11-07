@@ -17,6 +17,21 @@
                 <h1 class="page-title">{{ $language->name }}</h1>
             </div>
         </div>
+        @if ($language->levels->isNotEmpty())
+            <form method="GET" action="{{ route('languages.show', $language) }}" class="flex flex-wrap items-center gap-2">
+                <label for="sort" class="text-sm font-medium text-slate-600">ترتيب حسب</label>
+                <select
+                    id="sort"
+                    name="sort"
+                    onchange="this.form.submit()"
+                    class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    @foreach ($sortOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($sort === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </form>
+        @endif
         <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
             @if ($stats['cards'] > 0)
                 <x-icon-action :href="route('languages.print.options', $language)" title="طباعة" color="#0ea5e9">
