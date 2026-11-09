@@ -3,8 +3,19 @@
 @php
     $iconImageUrl = $card->iconImageUrl();
     $iconEmoji = $card->iconEmoji();
-    $hasIconImage = $card->show_icon && $iconImageUrl;
-    $hasIconEmoji = $card->show_icon && $iconEmoji;
+    $isPrint = is_array($printSettings);
+    $hasPrintVisibility = $isPrint && array_key_exists('show_icon', $printSettings);
+
+    $showIcon = $hasPrintVisibility ? ! empty($printSettings['show_icon']) : (bool) $card->show_icon;
+    $showAr = $hasPrintVisibility ? ! empty($printSettings['show_ar']) : (bool) $card->show_ar;
+    $showEn = $hasPrintVisibility ? ! empty($printSettings['show_en']) : (bool) $card->show_en;
+    $showExplanation = $hasPrintVisibility
+        ? ! empty($printSettings['show_explanation'])
+        : (bool) $card->show_explanation;
+
+    $hasIconImage = $showIcon && $iconImageUrl;
+    $hasIconEmoji = $showIcon && $iconEmoji;
+    $hasMediaData = (bool) ($iconImageUrl || $iconEmoji);
     $hasMedia = $hasIconImage || $hasIconEmoji;
 
     $unifyBg = ! empty($printSettings['unify_backgrounds'] ?? false)
@@ -25,9 +36,24 @@
 
 <div {{ $attributes->merge(['class' => 'flashcard-face flashcard-back-split bg-white border border-slate-200 overflow-hidden']) }}
      @if ($rootStyle !== '') style="{{ $rootStyle }}" @endif>
-    <div class="flashcard-back-media {{ $hasMedia ? '' : 'is-empty' }}"
+    <div class="flashcard-back-media {{ $hasMedia ? '' : ($isPrint ? 'print-part-hidden' : 'is-empty') }}"
+         data-print-part="icon"
          @if ($unifyBg) style="background: {{ $unifiedBgValue }}; border-bottom-color: rgba(0,0,0,0.08);" @endif>
-        @if ($hasIconImage)
+        @if ($isPrint && $hasMediaData)
+            @if ($iconImageUrl)
+                <img src="{{ $iconImageUrl }}" alt="" class="flashcard-back-image"
+                     @if ($iconEmoji)
+                     onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');"
+                     @else
+                     onerror="this.remove(); this.parentElement?.classList.add('print-part-hidden');"
+                     @endif>
+                @if ($iconEmoji)
+                    <div class="flashcard-back-emoji hidden">{{ $iconEmoji }}</div>
+                @endif
+            @elseif ($iconEmoji)
+                <div class="flashcard-back-emoji">{{ $iconEmoji }}</div>
+            @endif
+        @elseif ($hasIconImage)
             <img src="{{ $iconImageUrl }}" alt="" class="flashcard-back-image"
                  @if ($hasIconEmoji)
                  onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');"
@@ -42,16 +68,21 @@
         @endif
     </div>
     <div class="flashcard-back-text">
-        @if ($card->show_ar && $card->ar_meaning)
-            <p class="flashcard-back-ar" @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->ar_meaning }}</p>
+        @if ($isPrint ? $card->ar_meaning : ($showAr && $card->ar_meaning))
+            <p class="flashcard-back-ar{{ $showAr ? '' : ' print-part-hidden' }}"
+               data-print-part="ar"
+               @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->ar_meaning }}</p>
         @endif
 
-        @if ($card->show_en && $card->en_meaning)
-            <p class="flashcard-back-pron" @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->en_meaning }}</p>
+        @if ($isPrint ? $card->en_meaning : ($showEn && $card->en_meaning))
+            <p class="flashcard-back-pron{{ $showEn ? '' : ' print-part-hidden' }}"
+               data-print-part="en"
+               @if ($textStyle !== '') style="{{ $textStyle }}" @endif>{{ $card->en_meaning }}</p>
         @endif
 
-        @if ($card->show_explanation && $card->explanation)
-            <p class="flashcard-back-explanation"
+        @if ($isPrint ? $card->explanation : ($showExplanation && $card->explanation))
+            <p class="flashcard-back-explanation{{ $showExplanation ? '' : ' print-part-hidden' }}"
+               data-print-part="explanation"
                @if ($textStyle !== '') style="font-size: {{ max(8, (int) round($backFontPx * 0.75)) }}px; line-height: 1.35;" @endif>{{ $card->explanation }}</p>
         @endif
     </div>

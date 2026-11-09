@@ -234,11 +234,14 @@ body {
     overflow: hidden;
 }
 
-.flashcard-back-media.is-empty {
-    display: none;
+.flashcard-back-media.is-empty,
+.flashcard-back-media.print-part-hidden,
+[data-print-part].print-part-hidden {
+    display: none !important;
 }
 
-.flashcard-back-split:has(.flashcard-back-media.is-empty) {
+.flashcard-back-split:has(.flashcard-back-media.is-empty),
+.flashcard-back-split:has(.flashcard-back-media.print-part-hidden) {
     grid-template-rows: 1fr;
 }
 

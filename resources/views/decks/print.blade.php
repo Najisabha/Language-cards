@@ -43,6 +43,16 @@
                 height: {{ $printSettings['page_height_mm'] }}mm;
             }
         }
+
+        /* Must win over .flashcard-back-ar { display: -webkit-box } etc. */
+        .flashcard-back-media.print-part-hidden,
+        [data-print-part].print-part-hidden {
+            display: none !important;
+        }
+
+        .flashcard-back-split:has(.flashcard-back-media.print-part-hidden) {
+            grid-template-rows: 1fr;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -333,6 +343,47 @@
                                 </label>
                             </div>
                         </details>
+
+                        @php
+                            $contentToggles = [
+                                'show_icon' => [
+                                    'label' => 'الصورة / الأيقونة',
+                                    'part' => 'icon',
+                                    'on' => ! empty($printSettings['show_icon'] ?? true),
+                                ],
+                                'show_ar' => [
+                                    'label' => 'المعنى بالعربي',
+                                    'part' => 'ar',
+                                    'on' => ! empty($printSettings['show_ar'] ?? true),
+                                ],
+                                'show_en' => [
+                                    'label' => 'نطق الكلمة',
+                                    'part' => 'en',
+                                    'on' => ! empty($printSettings['show_en'] ?? true),
+                                ],
+                                'show_explanation' => [
+                                    'label' => 'شرح الكلمة',
+                                    'part' => 'explanation',
+                                    'on' => ! empty($printSettings['show_explanation'] ?? false),
+                                ],
+                            ];
+                        @endphp
+                        <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <h4 class="mb-2 text-xs font-semibold text-slate-700">محتوى الوجه الخلفي</h4>
+                            <p class="mb-3 text-[11px] text-slate-500">اضغط لإظهار أو إخفاء العناصر في البطاقات فوراً.</p>
+                            <div class="flex flex-wrap gap-2" id="print-content-toggles">
+                                @foreach ($contentToggles as $field => $toggle)
+                                    <input type="hidden" name="{{ $field }}" value="{{ $toggle['on'] ? '1' : '0' }}">
+                                    <button type="button"
+                                            class="print-content-toggle rounded-md border px-3 py-1.5 text-xs font-semibold transition {{ $toggle['on'] ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50' }}"
+                                            data-field="{{ $field }}"
+                                            data-part="{{ $toggle['part'] }}"
+                                            aria-pressed="{{ $toggle['on'] ? 'true' : 'false' }}">
+                                        {{ $toggle['label'] }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
                     </section>
                 </div>
 
@@ -415,7 +466,13 @@
                     return;
                 }
 
-                const FIELDS = ['paper_size', 'rows', 'cols', 'page_padding_mm', 'card_gap_mm', 'border_width_mm', 'border_style', 'unify_backgrounds', 'unify_with_back', 'unified_bg_mode', 'unified_bg_color', 'unified_bg_color_1', 'unified_bg_color_2', 'unified_bg_direction', 'front_font_size_px', 'back_font_size_px', 'front_text_rotate'];
+                const FIELDS = ['paper_size', 'rows', 'cols', 'page_padding_mm', 'card_gap_mm', 'border_width_mm', 'border_style', 'unify_backgrounds', 'unify_with_back', 'unified_bg_mode', 'unified_bg_color', 'unified_bg_color_1', 'unified_bg_color_2', 'unified_bg_direction', 'front_font_size_px', 'back_font_size_px', 'front_text_rotate', 'show_icon', 'show_ar', 'show_en', 'show_explanation'];
+                const CONTENT_TOGGLE_FIELDS = {
+                    show_icon: 'icon',
+                    show_ar: 'ar',
+                    show_en: 'en',
+                    show_explanation: 'explanation',
+                };
                 const paperSizes = {
                     A4: { w: 210, h: 297 },
                     A3: { w: 420, h: 297 },
@@ -437,6 +494,49 @@
                     });
                     return data;
                 }
+
+                function applyContentVisibility(part, visible) {
+                    document.querySelectorAll(`[data-print-part="${part}"]`).forEach((el) => {
+                        el.classList.toggle('print-part-hidden', !visible);
+                        if (part === 'icon') {
+                            el.classList.toggle('is-empty', !visible);
+                        }
+                    });
+                }
+
+                function syncContentToggleButton(button, on) {
+                    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    button.classList.toggle('border-indigo-600', on);
+                    button.classList.toggle('bg-indigo-600', on);
+                    button.classList.toggle('text-white', on);
+                    button.classList.toggle('border-slate-300', !on);
+                    button.classList.toggle('bg-white', !on);
+                    button.classList.toggle('text-slate-700', !on);
+                    button.classList.toggle('hover:bg-slate-50', !on);
+                }
+
+                document.querySelectorAll('.print-content-toggle').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const fieldName = button.dataset.field;
+                        const part = button.dataset.part;
+                        const input = form.elements.namedItem(fieldName);
+                        if (!fieldName || !part || !input) {
+                            return;
+                        }
+
+                        const nextOn = input.value !== '1';
+                        input.value = nextOn ? '1' : '0';
+                        syncContentToggleButton(button, nextOn);
+                        applyContentVisibility(part, nextOn);
+                        saveCurrent();
+                    });
+                });
+
+                Object.entries(CONTENT_TOGGLE_FIELDS).forEach(([fieldName, part]) => {
+                    const input = form.elements.namedItem(fieldName);
+                    if (!input) return;
+                    applyContentVisibility(part, input.value === '1');
+                });
 
                 function updateLiveCardSize() {
                     const sizeField = form.elements.namedItem('paper_size');

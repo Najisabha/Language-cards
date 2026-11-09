@@ -84,6 +84,10 @@ final class PrintLayout
             'front_font_size_px' => ['nullable', 'numeric', 'min:'.$frontFontLimits['min'], 'max:'.$frontFontLimits['max']],
             'back_font_size_px' => ['nullable', 'numeric', 'min:'.$backFontLimits['min'], 'max:'.$backFontLimits['max']],
             'front_text_rotate' => ['nullable', Rule::in(self::FRONT_TEXT_ROTATIONS)],
+            'show_icon' => ['nullable', 'in:0,1,true,false,on'],
+            'show_ar' => ['nullable', 'in:0,1,true,false,on'],
+            'show_en' => ['nullable', 'in:0,1,true,false,on'],
+            'show_explanation' => ['nullable', 'in:0,1,true,false,on'],
         ]);
     }
 
@@ -209,6 +213,18 @@ final class PrintLayout
             'front_font_size_px' => $frontFont,
             'back_font_size_px' => $backFont,
             'front_text_rotate' => $rotate,
+            'show_icon' => array_key_exists('show_icon', $input)
+                ? self::castBool($input['show_icon'])
+                : true,
+            'show_ar' => array_key_exists('show_ar', $input)
+                ? self::castBool($input['show_ar'])
+                : true,
+            'show_en' => array_key_exists('show_en', $input)
+                ? self::castBool($input['show_en'])
+                : true,
+            'show_explanation' => array_key_exists('show_explanation', $input)
+                ? self::castBool($input['show_explanation'])
+                : false,
             'mode' => 'custom',
         ];
     }
