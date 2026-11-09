@@ -134,20 +134,15 @@
                         const matchesSearch = !q || name.includes(q);
                         const matchesLevel = !levelId || itemLevelId === levelId;
                         const visible = matchesSearch && matchesLevel;
-                        const checkbox = item.querySelector('input[type="checkbox"]');
 
                         item.classList.toggle('hidden', !visible);
-                        if (checkbox) {
-                            checkbox.disabled = !visible;
-                            if (!visible) checkbox.checked = false;
-                        }
                     });
 
                     updateSelectedCount();
                 };
 
                 const updateSelectedCount = () => {
-                    const checked = form.querySelectorAll('input[name="deck_ids[]"]:checked:not(:disabled)').length;
+                    const checked = form.querySelectorAll('input[name="deck_ids[]"]:checked').length;
                     if (selectedCount) selectedCount.textContent = `محدد: ${checked}`;
                 };
 
@@ -175,7 +170,7 @@
                 updateSelectedCount();
 
                 form.addEventListener('submit', (e) => {
-                    const checked = form.querySelectorAll('input[name="deck_ids[]"]:checked:not(:disabled)');
+                    const checked = form.querySelectorAll('input[name="deck_ids[]"]:checked');
                     if (!checked.length) {
                         e.preventDefault();
                         alert('اختر مجموعة واحدة على الأقل.');

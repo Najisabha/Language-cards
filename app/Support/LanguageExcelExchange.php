@@ -26,6 +26,7 @@ final class LanguageExcelExchange
     /** @var list<string> */
     public const HEADERS = [
         'المستوى',
+        'العنوان الأساسي',
         'النوع',
         'الفئة',
         'الكلمة',
@@ -158,6 +159,7 @@ final class LanguageExcelExchange
                 }
 
                 $levelName = trim((string) ($row[$columnMap['level_name']] ?? ''));
+                $levelTitle = trim((string) ($row[$columnMap['level_title'] ?? -1] ?? ''));
                 $deckName = trim((string) ($row[$columnMap['deck_name']] ?? ''));
                 $word = trim((string) ($row[$columnMap['word']] ?? ''));
 
@@ -204,16 +206,23 @@ final class LanguageExcelExchange
                 ];
                 $payload['show_icon'] = $payload['icon'] !== null;
 
+                $normalizedLevelTitle = $levelTitle !== '' ? mb_substr($levelTitle, 0, 120) : null;
+
                 $level = Level::query()->firstOrCreate(
                     [
                         'language_id' => $language->id,
                         'name' => mb_substr($levelName, 0, 50),
                     ],
                     [
-                        'title' => null,
+                        'title' => $normalizedLevelTitle,
                         'position' => 0,
                     ]
                 );
+
+                if ($normalizedLevelTitle !== null && $level->title !== $normalizedLevelTitle) {
+                    $level->title = $normalizedLevelTitle;
+                    $level->save();
+                }
 
                 $deck = Deck::query()->firstOrCreate(
                     [
@@ -365,6 +374,10 @@ final class LanguageExcelExchange
             ]),
         ]);
 
+        $levels = $language->levels
+            ->sort(fn ($a, $b) => strnatcasecmp((string) $a->name, (string) $b->name))
+            ->values();
+
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('البطاقات');
@@ -372,12 +385,13 @@ final class LanguageExcelExchange
         $this->styleHeaderRow($sheet, count(self::HEADERS));
 
         $rowNumber = 2;
-        foreach ($language->levels as $level) {
+        foreach ($levels as $level) {
             foreach ($level->decks as $deck) {
                 foreach ($deck->categories as $category) {
                     foreach ($category->cards as $card) {
                         $sheet->fromArray([[
                             $level->name,
+                            $level->title ?? '',
                             $deck->name,
                             $category->name,
                             $card->word,
@@ -421,6 +435,7 @@ final class LanguageExcelExchange
     {
         $aliases = [
             'level_name' => ['المستوى', 'level', 'level_name'],
+            'level_title' => ['العنوان الأساسي', 'العناوين الأساسية', 'العنوان', 'title', 'level_title'],
             'deck_name' => ['النوع', 'deck', 'deck_name', 'type', 'group'],
             'category_name' => ['الفئة', 'category', 'category_name'],
             'word' => ['الكلمة', 'word', 'front'],

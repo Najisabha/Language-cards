@@ -114,10 +114,13 @@ class LanguageController extends Controller
             'cards_asc' => $levels->sortBy('cards_count')->values(),
             'decks_desc' => $levels->sortByDesc('decks_count')->values(),
             'decks_asc' => $levels->sortBy('decks_count')->values(),
-            default => $levels->sortBy([
-                ['position', 'asc'],
-                ['name', 'asc'],
-            ])->values(),
+            default => $levels->sort(function ($a, $b) {
+                $byPosition = ((int) $a->position) <=> ((int) $b->position);
+
+                return $byPosition !== 0
+                    ? $byPosition
+                    : strnatcasecmp((string) $a->name, (string) $b->name);
+            })->values(),
         };
     }
 
@@ -128,6 +131,8 @@ class LanguageController extends Controller
                 'decks' => fn ($dq) => $dq->withCount('cards')->latest(),
             ]),
         ]);
+
+        $language->setRelation('levels', $this->sortLanguageLevels($language->levels, 'name_natural'));
 
         return view('languages.print-options', compact('language'));
     }
@@ -146,6 +151,8 @@ class LanguageController extends Controller
                 ]),
             ]),
         ]);
+
+        $language->setRelation('levels', $this->sortLanguageLevels($language->levels, 'name_natural'));
 
         $allDecks = $language->levels->flatMap->decks;
         $allowedIds = $allDecks->pluck('id')->all();
